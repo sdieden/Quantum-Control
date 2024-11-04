@@ -3,7 +3,9 @@
 from arc import *
 import numpy as np
 import matplotlib.pyplot as plt
+from decimal import Decimal
 from sympy import S
+from twisted.protocols.amp import Decimal
 
 ## Stark Map
 
@@ -15,10 +17,10 @@ l0 = 1
 j0 = 1
 mj0 = 0
 # Define max/min n values in basis
-nmin = n0 - 3
-nmax = n0 + 3
+nmin = n0 - 7
+nmax = n0 + 7
 # Maximum value of l to include (l~20 gives good convergence for states with l<5)
-lmax = 5
+lmax = 34
 
 # Initialise Basis States for Solver : progressOutput=True gives verbose output
 calc.defineBasis(n0, l0, j0, mj0, nmin, nmax, lmax, progressOutput=True, s=1)
@@ -30,9 +32,9 @@ N = 1001  # Number of Points
 # Generate Stark Map
 calc.diagonalise(np.linspace(Emin, Emax, N), progressOutput=True)
 # Show Sark Map
-#calc.plotLevelDiagram(progressOutput=True, units=0, highlightState=True)
-#calc.ax.set_ylim(-101.25,-100 )
-#calc.showPlot(interactive=False)
+calc.plotLevelDiagram(progressOutput=True, units=0, highlightState=True)
+calc.ax.set_ylim(-101.25,-100 )
+calc.showPlot(interactive=False)
 # return the ensemble of mixing states, for small E, we should get 1 for the initial state and 0 for the others
 
 
@@ -40,7 +42,7 @@ calc.diagonalise(np.linspace(Emin, Emax, N), progressOutput=True)
 # show non 0 values.
 a=calc.highlight[N-1]
 MixingStates_Coef = []#np.array([])
-print(type(MixingStates_Coef))
+
 MixingStates_Term = []#np.array([])
 for i in range(len(a)):
     if a[i] > 10**-3 :
@@ -51,7 +53,7 @@ for i in range(len(a)):
         MixingStates_Term.append(calc.basisStates[i])
     else :
         pass
-print(MixingStates_Coef)
+#print(MixingStates_Coef)
 # still need to check that highlight and basisStates are arranged the same way.
 
 # histogramm of the mixingstates
@@ -59,29 +61,63 @@ print(MixingStates_Coef)
 n_bins = len(MixingStates_Coef)
 MixingStates_Coef = np.array(MixingStates_Coef)
 MixingStates_Term = np.array(MixingStates_Term)
-#plt.hist(MixingStates_Coef)
-#plt.show()
-
-# plt.style.use('_mpl-gallery')
-
+for i in range(len(MixingStates_Coef)):
+    MixingStates_Coef[i] = '%.2E' % Decimal(MixingStates_Coef[i])
 # make data:
 ## separation of information for the term matrix
-x = []
-for i in range(len(MixingStates_Term)):
-    x.append(i+0.5)
+#x = []
+#for i in range(len(MixingStates_Term)):
+#    x.append(i+0.5)
 # transform list of quantum numbers into terms
 # in general terms are written such so ^2S+1L_J
+def Term(n,l,j,s):
+    first_quantum_number = n
+    Spin_part = 2*s+1
 
+    if l==0 :
+        orbital = "S"
+    elif l==1:
+        orbital = "P"
+    elif l==2:
+        orbital = "D"
+    elif l==3:
+        orbital ="F"
+    elif l==4:
+        orbital = "G"
+    elif l==5:
+        orbital = "H"
+    elif l==6:
+        orbital = "I"
+    elif l==7:
+        orbital = "K"
+    else :
+        orbital = int(l)
 
+    term = "{N}$^{S}{L}_{J}$"
+    return term.format(N=int(first_quantum_number),J = int(j),L = orbital,S=int(Spin_part))
+# now we rewrite the list of list as a list of terms
+MixingStates_Term_new = []
+for i in range(len(MixingStates_Term)):
+
+    MixingStates_Term_new.append(Term(MixingStates_Term[i][0],MixingStates_Term[i][1],MixingStates_Term[i][2],MixingStates_Term[i][3]))
+x = MixingStates_Term_new
 y = MixingStates_Coef
 
 # plot
 fig, ax = plt.subplots()
-
 ax.bar(x, y, width=1, edgecolor="white", linewidth=0.5)
+multiplier = 0
+for coef in MixingStates_Coef:
+    offset = multiplier
+    rects = ax.bar(offset,coef ,width=1)
+    ax.bar_label(rects, padding=5, fontsize=8)
+    multiplier+=1
 # length of axes should be adjusted to the number of relevant states in the mixing state
-ax.set(xlim=(0, len(MixingStates_Coef)),
+ax.set(xlim=(-0.5, len(MixingStates_Coef)-0.5),
        ylim=(0, 1))
-
+ax.set_ylabel('coefficient du mix')
+ax.set_title(r'Mixing states of Stark Levels in $^{40}Ca$')
+ax.tick_params(axis='x',pad=0)
+plt.xticks(rotation = 90)
 plt.show()
-Term(n0,l0,j0,s=1)
+print(Term(n0,l0,j0,s=1))
