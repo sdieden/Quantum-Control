@@ -28,14 +28,14 @@ lmax = 34
 calc.defineBasis(n0, l0, j0, mj0, nmin, nmax, lmax, progressOutput=True, s=s0)
 
 Emin = 0.0  # Min E field (V/m)
-Emax = 4.0e2  # Max E field (V/m)
+Emax = 12.0e2  # Max E field (V/m)
 N = 1001  # Number of Points
 
 # Generate Stark Map
 calc.diagonalise(np.linspace(Emin, Emax, N), progressOutput=True)
 # Show Sark Map
 calc.plotLevelDiagram(progressOutput=True, units=0, highlightState=True)
-calc.ax.set_ylim(-105,-70 )
+calc.ax.set_ylim(-100,-80 )
 calc.showPlot(interactive=False)
 
 #####
@@ -123,58 +123,19 @@ x = MixingStates_Term_new
 y = MixingStates_Coef
 
 # plot
-#fig, ax = plt.subplots()
-#ax.bar(x, y, width=1, edgecolor="white", linewidth=0.5)
-#multiplier = 0
-#for coef in MixingStates_Coef:
-#    offset = multiplier
-#    rects = ax.bar(offset,coef ,width=1)
-#    ax.bar_label(rects,labels=[f"{coef:.3f}" for coef in rects.datavalues], padding=5, fontsize=8, rotation='vertical')
-#    multiplier+=1
-# length of axes should be adjusted to the number of relevant states in the mixing state
-#ax.set(xlim=(-0.5, len(MixingStates_Coef)-0.5),
-#       ylim=(0, 1))
-#ax.set_ylabel('coefficient du mix')
-#ax.set_title(r'Mixing states of Stark Levels in $^{40}Ca$')
-#ax.tick_params(axis='x',pad=0)
-#plt.xticks(rotation = 90)
-#plt.show()
-# List of the points to analyze in the Stark map progression
-points = [N // 4, N // 2, 3 * N // 4, N - 1]  # Convert to integer indices
-
-fig, axs = plt.subplots(2, 2, figsize=(14, 10))
-axs = axs.flatten()  # Flatten to easily index the 2x2 subplots array
-
-# Loop over each specified point and plot
-for idx, point in enumerate(points):
-    # Extract the mixing coefficients (highlighted states) at the current field point
-    a = calc.highlight[point]
-
-    # Prepare lists for non-zero coefficients and corresponding terms
-    MixingStates_Coef = []
-    MixingStates_Term = []
-
-    for i in range(len(a)):
-        if a[i] > 1e-3:  # Only include significant coefficients
-            MixingStates_Coef.append(a[i])
-            MixingStates_Term.append(calc.basisStates[i])
-
-    # Convert basis states to term notation
-    MixingStates_Term_new = [Term(n, l, j, s) for n, l, j, s in MixingStates_Term]
-
-    # Plot each subplot
-    ax = axs[idx]
-    ax.bar(MixingStates_Term_new, MixingStates_Coef, width=1, edgecolor="white", linewidth=0.5)
-
-    # Add labels to each bar with coefficients
-    for coef, term in zip(MixingStates_Coef, MixingStates_Term_new):
-        ax.text(term, coef, f"{coef:.3f}", ha='center', va='bottom', fontsize=8, rotation='vertical')
-
-    # Configure axis for each subplot
-    ax.set(xlim=(-0.5, len(MixingStates_Coef) - 0.5), ylim=(0, 1))
-    ax.set_title(f'Mixing states at E-field step {point} of $^{40}Ca$')
-    ax.tick_params(axis='x', labelrotation=90)
-    ax.set_ylabel('Mixing Coefficient')
-
-plt.tight_layout()
+fig, ax = plt.subplots()
+ax.bar(x, y, width=1, edgecolor="white", linewidth=0.5)
+multiplier = 0
+for coef in MixingStates_Coef:
+    offset = multiplier
+    rects = ax.bar(offset,coef ,width=1)
+    ax.bar_label(rects,labels=[f"{coef:.3f}" for coef in rects.datavalues], padding=5, fontsize=8, rotation='vertical')
+    multiplier+=1
+#length of axes should be adjusted to the number of relevant states in the mixing state
+ax.set(xlim=(-0.5, len(MixingStates_Coef)-0.5),
+       ylim=(0, 1))
+ax.set_ylabel('coefficient du mix')
+ax.set_title(r'Mixing states of Stark Levels in $^{40}Ca$')
+ax.tick_params(axis='x',pad=0)
+plt.xticks(rotation = 90)
 plt.show()
