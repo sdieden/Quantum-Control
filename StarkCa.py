@@ -6,29 +6,31 @@ import matplotlib.pyplot as plt
 from decimal import Decimal
 from holoviews.plotting.bokeh.styles import font_size
 from sympy import S
+from sympy.physics.control.control_plots import matplotlib
 from twisted.protocols.amp import Decimal
 
 ## Stark Map
 
 calc = StarkMap(Calcium40())
+#x%matplotlib qt
 
 # Target state
 n0 = 35
-l0 = 3
-j0 = 3
+l0 = 2
+j0 = 2
 mj0 = 0
 s0 = 0
 # Define max/min n values in basis
-nmin = n0 - 10
-nmax = n0 + 10
+nmin = n0 - 3
+nmax = n0 + 3
 # Maximum value of l to include (l~20 gives good convergence for states with l<5)
-lmax = 34
+lmax = nmax-1 #34
 
 # Initialise Basis States for Solver : progressOutput=True gives verbose output
 calc.defineBasis(n0, l0, j0, mj0, nmin, nmax, lmax, progressOutput=True, s=s0)
 
 Emin = 0.0  # Min E field (V/m)
-Emax = 12.0e2  # Max E field (V/m)
+Emax = 25.0e2  # Max E field (V/m)
 N = 1001  # Number of Points
 
 # Generate Stark Map
@@ -44,32 +46,28 @@ calc.showPlot(interactive=False)
 # return the ensemble of mixing states, for small E, we should get 1 for the initial state and 0 for the others
 # we want that it shows the quantum numbers associated to every value calculated, to make it more readable, we can just
 # show non 0 values.
-a=calc.highlight[N-1]
-print('a=',a)
+a=calc.highlight[5]
+#print('a=',a)
 MixingStates_Coef = []#list
 
 MixingStates_Term = []#list
-for i in range(len(a)):
-    if calc.basisStates[i] == [35, 3, 3, 0] :
-        print('Il est ici!!!!',i)
-    else :
-        pass
+
 for i in range(len(a)):
     if a[i] > 10**-3 :
-        print('i=',i)
+        #print('i=',i)
         #print("{}\t{}".format(calc.basisStates[i],a[i]))
-        print(len(a))
-        print(len(calc.basisStates))
-        print(calc.basisStates)
+        #print(len(a))
+        #print(len(calc.basisStates))
+        #print(calc.basisStates)
 
         MixingStates_Coef.append(a[i])
-        MixingStates_Term.append(calc.basisStates[i])
+        MixingStates_Term.append(calc.basisStates[i-2])
         #print(calc.basisStates[i],'i')
         #print(calc.basisStates[i-1],'i-1')
         #print(calc.basisStates[i + 1], 'i+1')
     else :
         pass
-print('coef=',MixingStates_Coef)
+#print('coef=',MixingStates_Coef)
 # still need to check that highlight and basisStates are arranged the same way.
 
 # histogramm of the mixingstates
