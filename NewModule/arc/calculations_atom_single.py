@@ -969,7 +969,7 @@ class StarkMap:
         self.y = []
         self.highlight = []
         self.composition = []
-
+        self.egvector = []
         if progressOutput:
             print("Finding eigenvectors...")
         progress = 0.0
@@ -988,6 +988,7 @@ class StarkMap:
             if drivingFromState[0] < 0.1:
                 sh = []
                 comp = []
+                app_vector = []
                 for i in xrange(len(ev)):
                     sh.append(abs(egvector[indexOfCoupledState, i]) ** 2)
                     comp.append(
@@ -997,8 +998,10 @@ class StarkMap:
                             totalContributionMax=totalContributionMax,
                         )
                     )
+                    app_vector.append(egvector[indexOfCoupledState, i])
                 self.highlight.append(sh)
                 self.composition.append(comp)
+                self.egvector.append(app_vector)
                 """
                 tentative d'ajout de la fonction # index_new_basis
                 le but est de pouvoir faire le lien entre les indices de basisStates et de les associer avec les coef

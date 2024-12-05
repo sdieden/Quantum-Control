@@ -26,9 +26,9 @@ lmax = nmax-1 #nmax-1
 # Initialise Basis States for Solver : progressOutput=True gives verbose output
 calc.defineBasis(n0, l0, j0, mj0, nmin, nmax, lmax, progressOutput=True, s=s0)
 
-Emin = 0.0  # Min E field (V/m)
+Emin = -25.0  # Min E field (V/m)
 Emax = 25.0e2  # Max E field (V/m)
-N = 1001  # Number of Points
+N = 2001  # Number of Points
 
 # Generate Stark Map
 calc.diagonalise(np.linspace(Emin, Emax, N), progressOutput=True,debugOutput=True)
@@ -37,13 +37,10 @@ calc.plotLevelDiagram(progressOutput=True, units=0, highlightState=True)
 calc.ax.set_ylim(-110, -85)
 calc.showPlot(interactive=False)
 
-#####
-#Other method to calcul mixing states composition using directly made in ARC
-
 # return the ensemble of mixing states, for small E, we should get 1 for the initial state and 0 for the others
 # we want that it shows the quantum numbers associated to every value calculated, to make it more readable, we can just
 # show non 0 values.
-a = calc.highlight[500]
+a = calc.highlight[N-1]
 
 def Term(n, l, j, s):
     # transform list of quantum numbers into terms
@@ -72,7 +69,18 @@ def Term(n, l, j, s):
 
     term = "{N}$^{S}{L}_{J}$"
     return term.format(N=int(first_quantum_number), J=int(j), L=orbital, S=int(Spin_part))
+def index_efield(Efield, round = True):
 
+    """
+    :param Efield: value of E field in V/m
+    :return: (closest) index
+    """
+
+    i = Efield*N/(Emax-Emin)
+    if round == True:
+        i = np.round(i)
+        i = i.astype(int)
+    return i
 
 #________corrected way
 
