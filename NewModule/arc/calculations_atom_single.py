@@ -982,7 +982,6 @@ class StarkMap:
                 sys.stdout.flush()
 
             m = self.mat1 + self.mat2 * eField
-
             ev, egvector = eigh(m)
             self.y.append(ev)
             if drivingFromState[0] < 0.1:
@@ -1003,10 +1002,6 @@ class StarkMap:
                 self.composition.append(comp)
                 self.egvector.append(app_vector)
                 """
-                tentative d'ajout de la fonction # index_new_basis
-                le but est de pouvoir faire le lien entre les indices de basisStates et de les associer avec les coef
-                présents dans highlight
-                
                 index_new_basis[i]=j a un état en i-eme position dans basisStates qui aura un coefficient de mixage
                 rangé à la j-eme place dans highlight.
                 """
@@ -1017,9 +1012,7 @@ class StarkMap:
                             self.index_new_basis.append(st_newbasis)
                         else :
                             pass
-                """
-                
-                """
+
 
             else:
                 sh = []
