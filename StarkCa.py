@@ -17,25 +17,36 @@ l0 = 3
 j0 = 3
 mj0 = 0
 s0 = 0
-# Define max/min n values in basis
-nmin = n0 - 5
-nmax = n0 + 5
+ # Define max/min n values in basis
+nmin = n0 - 3
+nmax = n0 + 3
+
+
 # Maximum value of l to include (l~20 gives good convergence for states with l<5)
 lmax = nmax-1 #nmax-1
 
 # Initialise Basis States for Solver : progressOutput=True gives verbose output
 calc.defineBasis(n0, l0, j0, mj0, nmin, nmax, lmax, progressOutput=True, s=s0)
 
-Emin = -25.0  # Min E field (V/m)
+Emin = 0.0  # Min E field (V/m)
 Emax = 25.0e2  # Max E field (V/m)
-N = 2001  # Number of Points
+N = 1001  # Number of Points
 
 # Generate Stark Map
 calc.diagonalise(np.linspace(Emin, Emax, N), progressOutput=True,debugOutput=True)
+binary_matrix_diagonal = 'bi_diagonal.npy'
+np.save(binary_matrix_diagonal, calc.mat1)
+binary_matrix_offdiag = 'bi_offdiag.npy'
+np.save(binary_matrix_offdiag, calc.mat2)
+exportdata = 'CA_EXPORTDATA.csv'
+calc.exportData(exportdata)
+
+
 # Show Sark Map
 calc.plotLevelDiagram(progressOutput=True, units=0, highlightState=True)
 calc.ax.set_ylim(-110, -85)
 calc.showPlot(interactive=False)
+
 
 # return the ensemble of mixing states, for small E, we should get 1 for the initial state and 0 for the others
 # we want that it shows the quantum numbers associated to every value calculated, to make it more readable, we can just

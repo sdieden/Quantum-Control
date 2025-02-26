@@ -3,6 +3,7 @@ sys.path.insert(0,'/Users/sam/PycharmProjects/Quantum-Control/NewModule')
 from arc import *
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
 calc = StarkMap(Calcium40())
 # Target state
 n0 = 35
@@ -50,12 +51,16 @@ def Term(n,l,j,s):
     term = "{N}$^{S}{L}_{J}$"
     return term.format(N=int(first_quantum_number),J = int(j),L = orbital,S=int(Spin_part))
 
+# matrice 3D qui contient [1] l'ensemble de highlight, [2] l'ensemble des egvector, [3] les niveaux de l'ancienne base associees
+
+
+
 a = calc.highlight[N-1] #
 b = calc.egvector[N-1]
+np.save('/Users/sam/PycharmProjects/Quantum-Control/arc_data', np.array([a,b]))
 
-print(a)
-print(b)
 
+"""
 MixingStates_Coef = []  #list : MixingStates_Coef[i] gives the % of presence of the i-th state in the Stark level for specified value of electric Field E
 
 MixingStates_Term = []  #list : MixingStates_Term[i] gives the quantum numbers of the i-th state
@@ -71,10 +76,11 @@ for i in range(len(a)):
     else:
         pass
 
+
 # histogramm of the mixingstates
 
 n_bins = len(MixingStates_Coef)
-#MixingStates_Coef = np.array(MixingStates_Coef)
+MixingStates_Coef = np.array(MixingStates_Coef)
 MixingStates_Egvector = np.array(MixingStates_Egvector)
 MixingStates_Term = np.array(MixingStates_Term)
 MixingStates_Term_new = []
@@ -106,7 +112,7 @@ ax.set_title(r'Mixing states of Stark Levels in $^{40}Ca$')
 ax.tick_params(axis='x', pad=0)
 plt.xticks(rotation=90)
 plt.show()
-
+"""
 """
 Plots les coefficients
 y = MixingStates_Egvector
