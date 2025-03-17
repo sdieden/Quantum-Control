@@ -6,7 +6,7 @@ import cmath as cm
 import pathlib
 from numpy.ma.core import shape
 
-from PulseTime import initial_psi
+
 
 newModPath=pathlib.Path(os.path.dirname(os.path.abspath(__file__)),'NewModule')
 sys.path.insert(0, str(newModPath))
@@ -87,14 +87,17 @@ def pulse_evolution(pulseList):
 # initial state
     initial_psi = np.zeros(len(calc.basisStates))
     initial_psi = np.complex128(initial_psi)
-    initial_psi[calc.index_new_basis[calc.indexOfCoupledState]] = 1
-
-    ##
+    #initial_psi[calc.index_new_basis[calc.indexOfCoupledState]] = 1
+    initial_psi[calc.indexOfCoupledState] = 1
+#
     psi=[initial_psi]
 
     for pulse in Pulse.liste_pulse:
         idx=pulse.index_of_amplitude()
+    calc.diagonalise(Pulse.amplitudes())
+    for i in range(len(Pulse.liste_pulse)):
         psi.append(apply_pulse(psi[-1], pulse))
+    
     return psi
 
 list = [(30,5),(0,10),(20,1)]
