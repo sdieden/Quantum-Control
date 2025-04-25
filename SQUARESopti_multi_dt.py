@@ -8,7 +8,8 @@ sys.path.insert(0, str(newModPath))
 from arc_sam import *  # Import ARC (Alkali Rydberg Calculator)
 from PulseFunction import U, apply_pulse, pulse_evolution, pulse_evolution_final, total_population, conv_en, conv_t, conv_ce, hbar
 from matplotlib.colors import LinearSegmentedColormap
-
+import time
+debut = time.time() #value way too high
 
 # Initialization of the system
 atom = Calcium40()
@@ -27,23 +28,26 @@ initial_wf = np.zeros(len(calc.basisStates),dtype=complex)
 initial_wf[calc.indexOfCoupledState]= 1
 
 # Définition des paramètres pour les champs électriques
-Emin = 8e2    # 800 V/m
-Emax = 15e2   # 1500 V/m
-N = 6
-F_pos = np.linspace(Emin, Emax, N)
-F_neg = np.linspace(-Emax, -Emin, N)
+Emin = 10.5e2    # 800 V/m
+Emax = 11e2   # 1500 V/m
+N = 2000
+min_t_interval = 2e-10
+min_v_interval = 0.0029296875 * 100 #[V/m]
+step = round((Emax - Emin) / N)
+F_pos = np.linspace(Emin, Emax, num = 500 )
+F_neg = np.linspace(-Emax, -Emin, num = 500)
 a = np.concatenate((F_pos, F_neg))
 a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant
 
 # Liste des différentes durées de pulse à tester
-dt_values = np.logspace(-9, -6, 2*N) # Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
+dt_values = np.logspace(-11, -10, num = N)# Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
 
 # Dictionnaires pour stocker les résultats pour chaque valeur de dt
 all_l10_populations = {}
 all_l_sup_10_populations = {}
 
 for dt in dt_values:
-    #print(f"\n=== Calculs avec dt = {dt} secondes ===")
+    print(f"\n=== Calculs avec dt = {dt} secondes ===")
     
     # Construction des pulses pour cette valeur de dt
     pulse_square = []
@@ -57,6 +61,7 @@ for dt in dt_values:
     l_sup_10_populations = []
     
     for i, pulse_list in enumerate(pulse_square):
+        #print("enumerage number",i)
         # Chaque pulse est appliqué sur l'état initial initial_wf, pas sur l'état résultant du pulse précédent
         x = pulse_evolution(pulse_list, initial_coupled=initial_wf, calc=calc)
         # Ne garde que l'état final (après le pulse)
@@ -78,12 +83,17 @@ for dt in dt_values:
         pop_l_sup_10 = 0
         start_idx = calc.indexOfCoupledState+(10-l)
         end_idx = min(len(y), calc.indexOfCoupledState+(n-l))
-        
+
         if start_idx < len(y):
+            #print('in the boucle')
+            weighted_pop = 0
+            max_l = max(calc.basisStates[idx][1] for idx in range(start_idx, end_idx))
             for idx in range(start_idx, end_idx):
-                #print(f"idx: {idx}, basis element: {calc.basisStates[idx]}")
-                pop_l_sup_10 += y[idx]
-        
+                l_idx = calc.basisStates[idx][1]
+                weighted_pop += (l_idx/max_l) * y[idx]  # Population pondérée par l/l_max
+            
+            pop_l_sup_10 = weighted_pop
+
         l_sup_10_populations.append(pop_l_sup_10)
         """
         # Affiche les résultats pour quelques pulses (pas tous pour ne pas surcharger l'affichage)
@@ -93,42 +103,18 @@ for dt in dt_values:
     # Stocker les résultats pour cette valeur de dt
     all_l10_populations[dt] = l10_populations
     all_l_sup_10_populations[dt] = l_sup_10_populations
-
+fin_calcul = time.time()
 # Sauvegarde des résultats dans un fichier NumPy pour une utilisation ultérieure
-np.savez('resultats_multi_dt.npz', 
+np.savez('resultats_multi_dt_short_time.npz',
          dt_values=dt_values, 
          amplitudes=a, 
          l10_pop=all_l10_populations, 
          l_sup_10_pop=all_l_sup_10_populations)
 print("Résultats sauvegardés dans 'resultats_multi_dt.npz'")
-"""
-# Création des graphiques pour comparer les résultats avec différents dt
-# Figure pour l=10 (échelle linéaire)
-plt.figure(figsize=(12, 6))
-for dt in dt_values:
-    plt.plot(a, all_l10_populations[dt], 'o-', label=f'dt = {dt}s')
-plt.xlabel('Amplitude du champ électrique (V/m)')
-plt.ylabel('Population')
-plt.title('Population l=10 en fonction de l\'amplitude du champ électrique pour différents dt')
-plt.grid(True)
-plt.legend()
-plt.tight_layout()
-plt.savefig('l10_lineaire.png')
-plt.show()
 
-# Figure pour l>10 (échelle linéaire)
-plt.figure(figsize=(12, 6))
-for dt in dt_values:
-    plt.plot(a, all_l_sup_10_populations[dt], 's-', label=f'dt = {dt}s')
-plt.xlabel('Amplitude du champ électrique (V/m)')
-plt.ylabel('Population')
-plt.title('Population l>10 en fonction de l\'amplitude du champ électrique pour différents dt')
-plt.grid(True)
-plt.legend()
-plt.tight_layout()
-plt.savefig('l_sup_10_lineaire.png')
-plt.show()
-"""
+
+print("plotting...")
+
 # Création des matrices pour pcolormesh
 X, Y = np.meshgrid(a, dt_values)
 Z_l_sup_10 = np.zeros((len(dt_values), len(a)))
@@ -162,7 +148,7 @@ colors = [(1, 1, 1),       # blanc pour très faibles valeurs
 
 # Positions des couleurs sur l'échelle de 0 à 1
 positions = [0, 0.1, 0.3, 0.6, 0.8, 1.0]
-
+print("plotting...")
 # Créer la carte de couleurs
 custom_cmap = LinearSegmentedColormap.from_list('custom_blues_greens_orange', list(zip(positions, colors)),N=512)
 
@@ -191,70 +177,10 @@ cbar = fig.colorbar(pcm_pos, ax=[ax1, ax2], label='Population des états l>10')
 plt.savefig('heatmap_l_sup_10_split_custom.png')
 plt.show()
 
+fin_plot = time.time()
 
-"""
-# Barre de couleur commune (à droite)
-cbar = fig.colorbar(pcm_pos, ax=[ax1, ax2], label='Population des états l>10')
+temps_calcul = fin_calcul - debut
+temps_plot = fin_plot - debut
+print(f"temps de calcul:{temps_calcul:.2f}secondes, temps plot:{temps_plot:.2f}secondes")
+#print(debut,temps_calcul,temps_plot) #probleme avec debut ??
 
-plt.tight_layout()
-plt.savefig('heatmap_l_sup_10_split_custom.png')
-plt.show()
-
-# Création du heatmap pour l>10 avec une meilleure présentation
-fig, ax = plt.subplots(figsize=(12, 8))
-pcm = ax.pcolormesh(X, Y, Z_l_sup_10, cmap=custom_cmap, shading='auto')
-c = plt.colorbar(pcm, ax=ax, extend='both', label='Population des états l>10')
-
-plt.xlabel('Amplitude du champ électrique (V/m)')
-plt.ylabel('Durée du pulse (s)')
-plt.yscale('log')  # Échelle logarithmique pour mieux visualiser les différentes durées
-plt.title('Population des états l>10 en fonction du champ électrique et de la durée')
-plt.grid(True, alpha=0.3, linestyle='--')  # Grille discrète
-plt.tight_layout()
-plt.savefig('heatmap_l_sup_10_custom.png')
-plt.show()
-
-# Version avec contours pour une meilleure visualisation
-plt.figure(figsize=(12, 8))
-levels = 20  # Nombre de niveaux de contour
-contour = plt.contourf(X, Y, Z_l_sup_10, levels, cmap='PuBu_r')
-plt.colorbar(contour, label='Population des états l>10')
-plt.xlabel('Amplitude du champ électrique (V/m)')
-plt.ylabel('Durée du pulse (s)')
-plt.yscale('log')
-plt.title('Population des états l>10 (visualisation avec contours)')
-plt.grid(True, alpha=0.3, linestyle='--')
-
-# Ajouter une annotation pour indiquer que la zone centrale n'est pas calculée
-plt.axvspan(-Emin, Emin, alpha=0.1, color='gray')
-plt.text(0, np.min(dt_values)*3, 'Zone non calculée', 
-         ha='center', va='bottom', 
-         bbox=dict(boxstyle='round,pad=0.5', fc='white', alpha=0.7))
-
-plt.tight_layout()
-plt.savefig('contour_l_sup_10.png')
-plt.show()
-"""
-
-
-
-"""
-# Graphique comparatif supplémentaire - Ratio des populations pour différents dt
-plt.figure(figsize=(12, 6))
-for dt in dt_values:
-    ratio = []
-    for i in range(len(a)):
-        if all_l10_populations[dt][i] > 0:  # Éviter division par zéro
-            ratio.append(all_l_sup_10_populations[dt][i] / all_l10_populations[dt][i])
-        else:
-            ratio.append(0)
-    plt.plot(a, ratio, 'o-', label=f'dt = {dt}s')
-plt.xlabel('Amplitude du champ électrique (V/m)')
-plt.ylabel('Ratio (l>10 / l=10)')
-plt.title('Ratio des populations l>10 / l=10 pour différents dt')
-plt.grid(True)
-plt.legend()
-plt.tight_layout()
-plt.savefig('ratio_populations.png')
-plt.show() 
-"""
