@@ -6,17 +6,20 @@ import cmath as cm
 import pathlib
 from numpy.ma.core import shape
 
+
+
 # A CORRIGER
 
 newModPath=pathlib.Path(os.path.dirname(os.path.abspath(__file__)),'NewModule')
 sys.path.insert(0, str(newModPath))
 from arc_sam import *  # Import ARC (Alkali Rydberg Calculator)
-
+from NewModule.arc_sam.PulseClass import Pulse
 # Constantes
-conv_en = 4.359e18
-conv_t = 2.418e17
-conv_ce = 5.14e-11
+conv_ce = 5.14e-11    # conversion de champ électrique, useless ?
 hbar = 1
+ghz_to_hartree = 1.51983e-7  # 1 GHz = 1.51983e-7 Hartree
+seconds_to_au = 4.13414e16  # 1 s = 4.13414e16 atomic time units
+
 
 def U(en, dt):
     """
@@ -30,60 +33,84 @@ def U(en, dt):
 
     """
     # Conversion en unités atomiques
-    en_au = en * conv_en  # Conversion en Hartree
-    dt_au = dt * conv_t   # Conversion en unités de temps atomiques
+    en_au = en * ghz_to_hartree # Conversion en Hartree
+    dt_au = dt * seconds_to_au   # Conversion en unités de temps atomiques
     
     # Calcul de la phase avec les unités correctes
-    phase = -1j * en_au * dt_au / hbar
+    phase = -1j * en_au * dt_au #/ hbar #is supposed to be 1
     u = cm.exp(phase)
     
     return u
 
-
-def apply_pulse(psi_in, pulse, calc):
+def create_basis_change(psi_in,pulse,calc):
     """
-    Probably better to do the conv_to_ua in the U fonction
+    create matrix for basis change, from stark to atomic, stark to stark
 
-    :arg psi_in: wavefunction before the pulse
-    :arg pulse: list of 2 elts, pulse amplitude in V/m and pulse duration in s
-    :arg calc: StarkMap object that has been properly initialized
-    :return psi_out: wavefunction after the pulse
+    """
+    stark_basis = calc.composition[pulse.index_of_amplitude]
+    # for atomic to stark first
+    length = len(psi_in)
+    matrix = [[0 for _ in range(length)] for _ in range(length)]
+    for i,state in stark_basis:
+        idx = state[1]
+        coef = state[0]
+        matrix[idx][i] = coef
+    return matrix
 
+
+def apply_pulse(psi_in, pulse, calc): #made by claude
+    """
+    Apply a pulse to a quantum state.
+
+    Args:
+        psi_in: wavefunction before the pulse (in atomic basis)
+        pulse: Pulse object with amplitude (V/m) and duration (s)
+        calc: StarkMap object that has been properly initialized with diagonalise method
+
+    Returns:
+        psi_out: wavefunction after the pulse (in atomic basis)
     """
     psi_out = np.zeros(len(psi_in), dtype=np.complex128)
-    
+
     if pulse.stark:
-        # Transformation vers la base Stark
+        # Transformation to Stark basis
         psi_stark = np.zeros(len(psi_in), dtype=np.complex128)
-        for stark_state_idx in range(len(psi_in)):
-            for atomic_comp in calc.composition[pulse.index_of_amplitude()][stark_state_idx]:
-                atomic_idx = atomic_comp[1]
-                coeff = atomic_comp[0]
-                psi_stark[stark_state_idx] += coeff * psi_in[atomic_idx]
 
-        # Évolution temporelle dans la base Stark avec phase dynamique
-        for stark_state_idx in range(len(psi_stark)):
-            en = calc.y[pulse.index_of_amplitude()][stark_state_idx]
-            # Ajout d'une petite variation aléatoire pour éviter l'évolution constante
-            en += np.random.normal(0, 1e-6) * en
-            psi_stark[stark_state_idx] *= U(en, pulse.duration)
+        # Get the composition of the Stark states in terms of atomic states
+        composition = calc.composition[pulse.index_of_amplitude()]
 
-        # Retour à la base atomique
-        for atomic_idx in range(len(psi_in)):
-            for stark_state_idx in range(len(psi_stark)):
-                for comp in calc.composition[pulse.index_of_amplitude()][stark_state_idx]:
-                    if comp[1] == atomic_idx:
-                        psi_out[atomic_idx] += comp[0] * psi_stark[stark_state_idx]
+        # Project onto Stark basis
+        for stark_idx in range(len(composition)): # for every stark level associated to the amplitude
+            stark_comp = composition[stark_idx] # taking one Stark level
+            for atomic_comp in stark_comp:  # looking at the decomposition of the stark level in the atomic basis
+                coef = atomic_comp[0]  # coefficient in the state decomposition ( the stark level has a composition of 57% of the |i> atomic level for exemple)
+                atomic_idx = atomic_comp[1]  # index of the atomic state ( |i> is the 32th term in the basis for exemple)
+                psi_stark[stark_idx] += coef * psi_in[atomic_idx]
+
+        # Apply time evolution in Stark basis
+        for stark_idx in range(len(psi_stark)):
+            # Get energy of this Stark state
+            energy = calc.y[pulse.index_of_amplitude()][stark_idx]
+            # Apply phase evolution
+            psi_stark[stark_idx] *= U(energy, pulse.duration)#U(energy, pulse.duration*conv_t) #ancienne version
+
+        # Transform back to atomic basis
+        for atomic_idx in range(len(psi_in)): # pour tous les états atomiques
+            for stark_idx in range(len(composition)): # on regarde chaque etat stark
+                stark_comp = composition[stark_idx] #
+                for comp in stark_comp:
+                    if comp[1] == atomic_idx:  # If this component maps to our atomic state
+                        psi_out[atomic_idx] += comp[0] * psi_stark[stark_idx]
 
     else:
-        # Évolution sans effet Stark
-        for state in range(len(psi_in)):
-            en = calc.y[0][state]
-            # Ajout d'une petite variation aléatoire pour éviter l'évolution constante
-            en += np.random.normal(0, 1e-6) * en
-            psi_out[state] = psi_in[state] * U(en, pulse.duration)
-    return psi_out
+        # Evolution without Stark effect - directly in atomic basis
+        for state_idx in range(len(psi_in)):
+            # Energy in field-free case
+            energy = calc.y[0][state_idx] # ONLY WORKS IF THE F=0 CASE HAS BEEN COMPUTED
+            # Apply phase evolution
+            psi_out[state_idx] = psi_in[state_idx] * U(energy, pulse.duration)
 
+    return psi_out
 
 def pulse_evolution(pulseList, initial_coupled, calc):
     """
@@ -96,8 +123,8 @@ def pulse_evolution(pulseList, initial_coupled, calc):
 
     """
     # Réinitialiser les pulses à chaque exécution
-    Pulse.liste_pulse = []  # <-- Ajout crucial
-    Pulse.amplitudes_list = set()  # <-- Réinitialisation des amplitudes
+    Pulse.liste_pulse = []
+    Pulse.amplitudes_list = set()
 
     # Vérification des pulses
     for pulse in pulseList:
@@ -106,7 +133,7 @@ def pulse_evolution(pulseList, initial_coupled, calc):
         if pulse[1] <= 0:
             raise ValueError(f'duration is negative', {pulse[1]}, 'must be positive')
 
-    # Création des objets Pulse
+    # Creation des objets Pulse
     for amplitude, duration in pulseList:
         Pulse(amplitude, duration)  # Ajoute à Pulse.liste_pulse
 
@@ -270,7 +297,8 @@ if __name__ == "__main__":
     # Tracer les populations en échelle logarithmique
     plt.semilogy(pop_states[-1], label='psi_evolution (3ème pulse)', marker='o')
     plt.semilogy(pop_states_test[-1], label='psi_evolution_test (1er pulse)', marker='x')
-
+    #plt.plot(pop_states[-1], label='psi_evolution (3ème pulse)', marker='o')
+    #plt.plot(pop_states_test[-1], label='psi_evolution_test (1er pulse)', marker='x')
     # Personnalisation du graphique
     plt.xlabel('Index de l\'état')
     plt.ylabel('Population (échelle log)')
