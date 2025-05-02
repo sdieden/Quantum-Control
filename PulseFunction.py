@@ -1,15 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
 import sys, os
 import cmath as cm
 import pathlib
-from numpy.ma.core import shape
-
-
-
-# A CORRIGER
-
 newModPath=pathlib.Path(os.path.dirname(os.path.abspath(__file__)),'NewModule')
 sys.path.insert(0, str(newModPath))
 from arc_sam import *  # Import ARC (Alkali Rydberg Calculator)
@@ -56,6 +49,7 @@ def create_basis_change(psi_in,pulse,calc):
         coef = state[0]
         matrix[idx][i] = coef
     return matrix
+
 
 
 def apply_pulse(psi_in, pulse, calc): #made by claude
@@ -106,7 +100,7 @@ def apply_pulse(psi_in, pulse, calc): #made by claude
         # Evolution without Stark effect - directly in atomic basis
         for state_idx in range(len(psi_in)):
             # Energy in field-free case
-            energy = calc.y[0][state_idx] # ONLY WORKS IF THE F=0 CASE HAS BEEN COMPUTED
+            energy = calc.y[0][state_idx]
             # Apply phase evolution
             psi_out[state_idx] = psi_in[state_idx] * U(energy, pulse.duration)
 
