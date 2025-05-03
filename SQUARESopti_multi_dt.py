@@ -3,13 +3,15 @@ import matplotlib.pyplot as plt
 import sys, os
 import cmath as cm
 import pathlib
+import time
+import datetime
 newModPath=pathlib.Path(os.path.dirname(os.path.abspath(__file__)),'NewModule')
 sys.path.insert(0, str(newModPath))
 from arc_sam import *  # Import ARC (Alkali Rydberg Calculator)
-from PulseFunction import U, apply_pulse, pulse_evolution, pulse_evolution_final, total_population, conv_en, conv_t, conv_ce, hbar
+from PulseFunction import U, apply_pulse, pulse_evolution, pulse_evolution_final, total_population,seconds_to_au , ghz_to_hartree, conv_ce, hbar
 from matplotlib.colors import LinearSegmentedColormap
-import time
-debut = time.time() #value way too high
+
+debut = time.time()
 
 # Initialization of the system
 atom = Calcium40()
@@ -28,20 +30,20 @@ initial_wf = np.zeros(len(calc.basisStates),dtype=complex)
 initial_wf[calc.indexOfCoupledState]= 1
 
 # Définition des paramètres pour les champs électriques
-Emin = 10.5e2    # 800 V/m
-Emax = 11e2   # 1500 V/m
-N = 2000
+Emin = 14e2    # 800 V/m
+Emax = 16e2   # 1500 V/m
+N = 10
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100 #[V/m]
 step = round((Emax - Emin) / N)
-F_pos = np.linspace(Emin, Emax, num = 500 )
-F_neg = np.linspace(-Emax, -Emin, num = 500)
+F_pos = np.linspace(Emin, Emax, num = 10)
+F_neg = np.linspace(-Emax, -Emin, num = 10)
 a = np.concatenate((F_pos, F_neg))
 a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant
 
 # Liste des différentes durées de pulse à tester
-dt_values = np.logspace(-11, -10, num = N)# Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
-
+#dt_values = np.logspace(-7.221, -7.15, num = N)# Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
+dt_values = np.logspace(-7.221848,-7.154901959985743, num = N)
 # Dictionnaires pour stocker les résultats pour chaque valeur de dt
 all_l10_populations = {}
 all_l_sup_10_populations = {}
@@ -95,22 +97,19 @@ for dt in dt_values:
             pop_l_sup_10 = weighted_pop
 
         l_sup_10_populations.append(pop_l_sup_10)
-        """
-        # Affiche les résultats pour quelques pulses (pas tous pour ne pas surcharger l'affichage)
-        if i % 5 == 0:
-            print(f"Pulse {i+1} (amplitude {pulse_list[0][0]} V/m): Population l=10: {pop_l_10:.6e}, Population l>10: {pop_l_sup_10:.6e}")
-        """
     # Stocker les résultats pour cette valeur de dt
     all_l10_populations[dt] = l10_populations
     all_l_sup_10_populations[dt] = l_sup_10_populations
 fin_calcul = time.time()
 # Sauvegarde des résultats dans un fichier NumPy pour une utilisation ultérieure
-np.savez('resultats_multi_dt_short_time.npz',
+date = datetime.datetime.now()
+name = f'Plot/resultats_multi_dt_lin{date}.npz'
+np.savez(name,
          dt_values=dt_values, 
          amplitudes=a, 
          l10_pop=all_l10_populations, 
          l_sup_10_pop=all_l_sup_10_populations)
-print("Résultats sauvegardés dans 'resultats_multi_dt.npz'")
+print(f"Résultats sauvegardés dans{name}")
 
 
 print("plotting...")
@@ -159,22 +158,24 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8), sharey=True)
 pcm_neg = ax1.pcolormesh(X_neg, Y_neg, Z_neg, cmap=custom_cmap, shading='auto')
 ax1.set_xlabel('Amplitude du champ électrique (V/m)')
 ax1.set_ylabel('Durée du pulse (s)')
-ax1.set_yscale('log')
+ax1.set_yscale('linear')
 ax1.set_title('Population l>10 - Champs électriques négatifs')
-ax1.grid(True, alpha=0.3, linestyle='--')
+#ax1.grid(True, alpha=0.3, linestyle='--')
 
 # 2e sous-graphique : Champs positifs avec pcolormesh
 pcm_pos = ax2.pcolormesh(X_pos, Y_pos, Z_pos, cmap=custom_cmap, shading='auto')
 ax2.set_xlabel('Amplitude du champ électrique (V/m)')
+#ax2.set_xlabel('Durée du pulse (s)')
 ax2.set_title('Population l>10 - Champs électriques positifs')
-ax2.set_yscale('log')
-ax2.grid(True, alpha=0.3, linestyle='--')
+ax2.set_yscale('linear')
+#ax2.grid(True, alpha=0.3, linestyle='--')
 
 # Barre de couleur commune (à droite)
 cbar = fig.colorbar(pcm_pos, ax=[ax1, ax2], label='Population des états l>10')
 
 #plt.tight_layout()
-plt.savefig('heatmap_l_sup_10_split_custom.png')
+
+plt.savefig(f'Plot/heatmap{date}.png')
 plt.show()
 
 fin_plot = time.time()
