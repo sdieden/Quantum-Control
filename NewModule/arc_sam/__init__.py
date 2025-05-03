@@ -98,6 +98,7 @@ from arc_sam.calculations_atom_pairstate import (
 from arc_sam.wigner import Wigner3j, Wigner6j, TriaCoeff, CG, WignerDmatrix
 from arc_sam._database import getCitationForARC
 from arc_sam.PulseClass import Pulse
+from arc_sam._database import getCitationForARC
 from scipy.constants import k as C_k
 from scipy.constants import c as C_c
 from scipy.constants import h as C_h

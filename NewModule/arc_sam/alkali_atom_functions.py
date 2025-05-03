@@ -13,7 +13,7 @@ labels etc.
 
 from __future__ import division, print_function, absolute_import
 
-from arc._database import sqlite3, UsedModulesARC
+from arc_sam._database import sqlite3, UsedModulesARC
 import csv
 import gzip
 from math import exp, sqrt
