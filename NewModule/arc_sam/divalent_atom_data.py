@@ -109,7 +109,7 @@ from math import log
 from scipy.constants import physical_constants
 from scipy.constants import h as C_h
 from scipy.constants import e as C_e
-from arc.divalent_atom_functions import DivalentAtom
+from arc_sam.divalent_atom_functions import DivalentAtom
 
 
 __all_ = ["Strontium88", "Calcium40", "Ytterbium174"]
