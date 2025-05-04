@@ -5,8 +5,8 @@ import cmath as cm
 import pathlib
 newModPath=pathlib.Path(os.path.dirname(os.path.abspath(__file__)),'NewModule')
 sys.path.insert(0, str(newModPath))
-from arc_sam import *  # Import ARC (Alkali Rydberg Calculator)
-from NewModule.arc_sam.PulseClass import Pulse
+from arc import *  # Import ARC (Alkali Rydberg Calculator)
+from NewModule.arc.PulseClass import Pulse
 # Constantes
 conv_ce = 5.14e-11    # conversion de champ électrique, useless ?
 hbar = 1

@@ -53,9 +53,9 @@ __all__ = [
     "getCitationForARC",
     "Pulse"
 ]
-from arc_sam.PulseClass import Pulse
+from arc.PulseClass import Pulse
 
-from arc_sam.alkali_atom_functions import (
+from arc.alkali_atom_functions import (
     AlkaliAtom,
     printState,
     printStateString,
@@ -63,7 +63,7 @@ from arc_sam.alkali_atom_functions import (
     printStateLetter,
     formatNumberSI,
 )
-from arc_sam.alkali_atom_data import (
+from arc.alkali_atom_data import (
     Hydrogen,
     Caesium,
     Cesium,
@@ -78,8 +78,8 @@ from arc_sam.alkali_atom_data import (
     Potassium40,
     Potassium41,
 )
-from arc_sam.divalent_atom_data import Strontium88, Calcium40, Ytterbium174
-from arc_sam.calculations_atom_single import (
+from arc.divalent_atom_data import Strontium88, Calcium40, Ytterbium174
+from arc.calculations_atom_single import (
     Ylm,
     Wavefunction,
     StarkMap,
@@ -91,14 +91,13 @@ from arc_sam.calculations_atom_single import (
     ShirleyMethod,
     RWAStarkShift,
 )
-from arc_sam.calculations_atom_pairstate import (
+from arc.calculations_atom_pairstate import (
     PairStateInteractions,
     StarkMapResonances,
 )
-from arc_sam.wigner import Wigner3j, Wigner6j, TriaCoeff, CG, WignerDmatrix
-from arc_sam._database import getCitationForARC
-from arc_sam.PulseClass import Pulse
-from arc_sam._database import getCitationForARC
+from arc.wigner import Wigner3j, Wigner6j, TriaCoeff, CG, WignerDmatrix
+from arc._database import getCitationForARC
+from arc.PulseClass import Pulse
 from scipy.constants import k as C_k
 from scipy.constants import c as C_c
 from scipy.constants import h as C_h
