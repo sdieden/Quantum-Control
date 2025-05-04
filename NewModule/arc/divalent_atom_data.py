@@ -264,7 +264,7 @@ class Calcium40(DivalentAtom):
         * 1e2
         * physical_constants["inverse meter-electron volt relationship"][0]
     )
-
+#
     quantumDefect = [
         [
             [2.33793, -0.1142, 0.0, 0.0, 0.0, 0.0],    
