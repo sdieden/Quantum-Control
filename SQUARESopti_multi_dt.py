@@ -11,7 +11,7 @@ from arc_sam import *  # Import ARC (Alkali Rydberg Calculator)
 from PulseFunction import U, apply_pulse, pulse_evolution, pulse_evolution_final, total_population,seconds_to_au , ghz_to_hartree, conv_ce, hbar
 from matplotlib.colors import LinearSegmentedColormap
 
-debut = time.time() #value way too high
+debut = time.time()
 
 # Initialization of the system
 atom = Calcium40()
@@ -32,18 +32,20 @@ initial_wf[calc.indexOfCoupledState]= 1
 # Définition des paramètres pour les champs électriques
 Emin = 14e2    # 800 V/m
 Emax = 16e2   # 1500 V/m
+
 N = 50
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100 #[V/m]
 step = round((Emax - Emin) / N)
 F_pos = np.linspace(Emin, Emax, num = 50)
 F_neg = np.linspace(-Emax, -Emin, num = 50)
+
 a = np.concatenate((F_pos, F_neg))
 a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant
 
 # Liste des différentes durées de pulse à tester
 #dt_values = np.logspace(-7.221, -7.15, num = N)# Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
-dt_values = np.linspace(6e-8,7e-8, num = N)
+dt_values = np.logspace(-7.221848,-7.154901959985743, num = N)
 # Dictionnaires pour stocker les résultats pour chaque valeur de dt
 all_l10_populations = {}
 all_l_sup_10_populations = {}
