@@ -30,22 +30,22 @@ initial_wf = np.zeros(len(calc.basisStates),dtype=complex)
 initial_wf[calc.indexOfCoupledState]= 1
 
 # Définition des paramètres pour les champs électriques
-Emin = 14e2    # 800 V/m
-Emax = 16e2   # 1500 V/m
+Emin = 8e2    # 800 V/m
+Emax = 15e2   # 1500 V/m
 
-N = 50
+N = 200
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100 #[V/m]
 step = round((Emax - Emin) / N)
-F_pos = np.linspace(Emin, Emax, num = 50)
-F_neg = np.linspace(-Emax, -Emin, num = 50)
+F_pos = np.linspace(Emin, Emax, num = 100)
+F_neg = np.linspace(-Emax, -Emin, num = 100)
 
 a = np.concatenate((F_pos, F_neg))
 a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant
 
 # Liste des différentes durées de pulse à tester
 #dt_values = np.logspace(-7.221, -7.15, num = N)# Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
-dt_values = np.logspace(-7.221848,-7.154901959985743, num = N)
+dt_values = np.logspace(-9,-6, num = N)
 # Dictionnaires pour stocker les résultats pour chaque valeur de dt
 all_l10_populations = {}
 all_l_sup_10_populations = {}
