@@ -30,9 +30,9 @@
 
 from __future__ import division, print_function, absolute_import
 
-from arc._database import sqlite3
-from arc.wigner import Wigner6j, CG, WignerDmatrix
-from arc.alkali_atom_functions import (
+from arc_sam._database import sqlite3
+from arc_sam.wigner import Wigner6j, CG, WignerDmatrix
+from arc_sam.alkali_atom_functions import (
     _atomLightAtomCoupling,
     singleAtomState,
     compositeState,
@@ -44,13 +44,13 @@ import os
 import datetime
 import matplotlib
 from matplotlib.colors import LinearSegmentedColormap
-from arc.calculations_atom_single import StarkMap
-from arc.alkali_atom_functions import (
+from arc_sam.calculations_atom_single import StarkMap
+from arc_sam.alkali_atom_functions import (
     printStateStringLatex,
     printStateString,
     printStateLetter,
 )
-from arc.divalent_atom_functions import DivalentAtom
+from arc_sam.divalent_atom_functions import DivalentAtom
 from scipy.special import factorial
 from scipy.sparse.linalg import eigsh
 from scipy.sparse import csr_matrix

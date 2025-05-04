@@ -13,7 +13,7 @@ labels etc.
 
 from __future__ import division, print_function, absolute_import
 
-from arc._database import sqlite3, UsedModulesARC
+from arc_sam._database import sqlite3, UsedModulesARC
 import csv
 import gzip
 from math import exp, sqrt
@@ -801,7 +801,6 @@ class AlkaliAtom(object):
             raise ValueError(
                 "j (=%.1f) is not equal to l+1/2 nor l-1/2 (l=%d)" % (j, l)
             )
-
     def getQuantumDefect(self, n, l, j, s=0.5):
         """
         Quantum defect of the level.
@@ -823,53 +822,9 @@ class AlkaliAtom(object):
             float: quantum defect
         """
         defect = 0.0
-        if l < 5:
-            # find correct part in table of quantum defects
-            modifiedRRcoef = self.quantumDefect[round(floor(s) + s + j - l)][l]
-            if l < 3 and abs(modifiedRRcoef[0]) < 1e-9 and self.Z != 1:
-                """
-                raise ValueError(
-                    "Quantum defects for requested state "
-                    + ("(n = %d, l = %d, j = %.1f, s=%.1f) are" % (n, l, j, s))
-                    + " uknown. Aborting calculation."
-                )
-            """
-                pass
-            defect = (
-                modifiedRRcoef[0]
-                + modifiedRRcoef[1] / ((n - modifiedRRcoef[0]) ** 2)
-                + modifiedRRcoef[2] / ((n - modifiedRRcoef[0]) ** 4)
-                + modifiedRRcoef[3] / ((n - modifiedRRcoef[0]) ** 6)
-                + modifiedRRcoef[4] / ((n - modifiedRRcoef[0]) ** 8)
-                + modifiedRRcoef[5] / ((n - modifiedRRcoef[0]) ** 10)
-            )
-        else:
-            # use \delta_\ell = \delta_g * (4/\ell)**5
-            # from https://journals.aps.org/pra/abstract/10.1103/PhysRevA.74.062712
-            defect = self.quantumDefect[0][4][0] * (4 / l) ** 5
-        return defect
-    def getMyQuantumDefect(self, n, l, j, s=0.5):
-        """
-        Quantum defect of the level.
 
-        For an example, see `Rydberg energy levels example snippet`_.
-
-        .. _`Rydberg energy levels example snippet`:
-            ./Rydberg_atoms_a_primer.html#Rydberg-Atom-Energy-Levels
-
-        Args:
-            n (int): principal quantum number
-            l (int): orbital angular momentum
-            j (float): total angular momentum
-            s (float): (optional). Total spin angular momentum.
-                Default value of 0.5 correct for Alkali atoms. For divalent
-                atoms it has to be explicitly defined.
-
-        Returns:
-            float: quantum defect
-        """
-        defect = 0.0
-        if l < 5:
+        if l < 5 and s!= 0: # alkali atoms and non singlet earth-alkali
+            print("If you are working on singlet Calcium and see this, you better be worried")
             # find correct part in table of quantum defects
             modifiedRRcoef = self.quantumDefect[round(floor(s) + s + j - l)][l]
             if l < 3 and abs(modifiedRRcoef[0]) < 1e-9 and self.Z != 1:
@@ -887,6 +842,18 @@ class AlkaliAtom(object):
                 + modifiedRRcoef[3] / ((n - modifiedRRcoef[0]) ** 6)
                 + modifiedRRcoef[4] / ((n - modifiedRRcoef[0]) ** 8)
                 + modifiedRRcoef[5] / ((n - modifiedRRcoef[0]) ** 10)
+            )
+        elif l < 65 and s == 0:  # singlet alkali
+
+            # find correct part in table of quantum defects
+            modifiedRRcoef = self.quantumDefect[round(floor(s) + s + j - l)][l]
+            defect = (
+                    modifiedRRcoef[0]
+                    + modifiedRRcoef[1] / ((n - modifiedRRcoef[0]) ** 2)
+                    + modifiedRRcoef[2] / ((n - modifiedRRcoef[0]) ** 4)
+                    + modifiedRRcoef[3] / ((n - modifiedRRcoef[0]) ** 6)
+                    + modifiedRRcoef[4] / ((n - modifiedRRcoef[0]) ** 8)
+                    + modifiedRRcoef[5] / ((n - modifiedRRcoef[0]) ** 10)
             )
         else:
             # use \delta_\ell = \delta_g * (4/\ell)**5
