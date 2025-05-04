@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from sympy.solvers.diophantine.diophantine import length
 
 
 def atomic_to_stark(psi_atomic, calc, amplitude_index):
@@ -65,7 +66,69 @@ def stark_to_atomic(psi_stark, calc, amplitude_index):
             psi_atomic[atomic_idx] += coeff * stark_amp
 
     return psi_atomic
+def atomic_to_stark_corrected(psi_atomic, calc, amplitude_index):
+    """
+    Transform a wavefunction from the atomic basis to the Stark basis.
 
+    Args:
+        psi_atomic (ndarray): Wavefunction in atomic basis
+        calc (StarkMap): StarkMap object with pre-computed composition
+        amplitude_index (int): Index for the electric field amplitude
+                              in calc.composition
+
+    Returns:
+        ndarray: Wavefunction in Stark basis
+    """
+    length = len(psi_atomic)
+    psi_stark = np.zeros(length, dtype=np.complex128)
+    map, = get_mapping(calc, amplitude_index)
+    # For each Stark state (index in Stark basis)
+    for stark_idx in range(length):
+        # Get the composition of this Stark state in terms of atomic states
+        state_composition = calc.composition[amplitude_index][stark_idx]
+
+        # Add contribution from each atomic state
+        for component in state_composition:
+            coeff = component[0]  # Coefficient of the atomic state
+            atomic_idx = component[1]  # Index of the atomic state
+
+            # Add this atomic state's contribution
+            psi_stark[stark_idx] += coeff * psi_atomic[atomic_idx]
+
+    return psi_stark
+def stark_to_atomic_corrected(psi_stark, calc, amplitude_index):
+    """
+    Transform a wavefunction from the Stark basis to the atomic basis.
+
+    Args:
+        psi_stark (ndarray): Wavefunction in Stark basis
+        calc (StarkMap): StarkMap object with pre-computed composition
+        amplitude_index (int): Index for the electric field amplitude
+                              in calc.composition
+
+    Returns:
+        ndarray: Wavefunction in atomic basis
+    """
+    length = len(psi_stark)
+    psi_atomic = np.zeros(length, dtype=np.complex128)
+    dummy,map = get_mapping(calc, amplitude_index)
+    # For each Stark state
+    for stark_idx, stark_amp in enumerate(psi_stark):
+        #if abs(stark_amp) < 1e-12:
+        #    continue  # Skip negligible amplitudes for efficiency
+
+        # Get composition of this Stark state
+        state_composition = calc.composition[amplitude_index][stark_idx]
+
+        # Add contribution to each atomic state
+        for component in state_composition:
+            coeff = component[0]  # Coefficient for atomic state
+            atomic_idx = component[1]  # Index of atomic state
+
+            # Add contribution to this atomic state
+            psi_atomic[atomic_idx] += coeff * stark_amp
+
+    return psi_atomic
 
 def get_mapping(calc, amplitude_index):
     """
@@ -304,7 +367,7 @@ def main():
     Main function to demonstrate usage of the conversion functions.
     """
     # Import necessary libraries
-    from arc import Calcium40, StarkMap
+    from arc_sam import Calcium40, StarkMap
 
     # Initialize atom and StarkMap object
     atom = Calcium40()
