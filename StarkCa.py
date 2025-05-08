@@ -13,13 +13,13 @@ calc = StarkMap(Calcium40())
 
 # Target state
 n0 = 35
-l0 = 3
-j0 = 3
+l0 = 34
+j0 = 34
 mj0 = 0
 s0 = 0
  # Define max/min n values in basis
-nmin = n0 - 3
-nmax = n0 + 3
+nmin = n0 - 10
+nmax = n0 + 10
 
 
 # Maximum value of l to include (l~20 gives good convergence for states with l<5)
@@ -28,8 +28,8 @@ lmax = nmax-1 #nmax-1
 # Initialise Basis States for Solver : progressOutput=True gives verbose output
 calc.defineBasis(n0, l0, j0, mj0, nmin, nmax, lmax, progressOutput=True, s=s0)
 
-Emin = 0.0  # Min E field (V/m)
-Emax = 25.0e2  # Max E field (V/m)
+Emin = -100.0e2  # Min E field (V/m)
+Emax = 100.0e2  # Max E field (V/m)
 N = 1001  # Number of Points
 
 # Generate Stark Map
@@ -44,7 +44,7 @@ calc.exportData(exportdata)
 
 # Show Sark Map
 calc.plotLevelDiagram(progressOutput=True, units=0, highlightState=True)
-calc.ax.set_ylim(-110, -85)
+calc.ax.set_ylim(-105, -85)
 calc.showPlot(interactive=False)
 
 
@@ -94,7 +94,7 @@ def index_efield(Efield, round = True):
     return i
 
 #________corrected way
-
+"""
 MixingStates_Coef = []  #list
 
 MixingStates_Term = []  #list
@@ -138,3 +138,4 @@ ax.set_title(r'Mixing states of Stark Levels in $^{40}Ca$')
 ax.tick_params(axis='x', pad=0)
 plt.xticks(rotation=90)
 plt.show()
+"""

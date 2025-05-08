@@ -33,12 +33,12 @@ initial_wf[calc.indexOfCoupledState]= 1
 Emin = 8e2    # 800 V/m
 Emax = 15e2   # 1500 V/m
 
-N = 200
+N = 10
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100 #[V/m]
 step = round((Emax - Emin) / N)
-F_pos = np.linspace(Emin, Emax, num = 100)
-F_neg = np.linspace(-Emax, -Emin, num = 100)
+F_pos = np.linspace(Emin, Emax, num = 10)
+F_neg = np.linspace(-Emax, -Emin, num = 10)
 
 a = np.concatenate((F_pos, F_neg))
 a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant
@@ -160,7 +160,7 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8), sharey=True)
 pcm_neg = ax1.pcolormesh(X_neg, Y_neg, Z_neg, cmap=custom_cmap, shading='auto')
 ax1.set_xlabel('Amplitude du champ électrique (V/m)')
 ax1.set_ylabel('Durée du pulse (s)')
-ax1.set_yscale('linear')
+ax1.set_yscale('log')
 ax1.set_title('Population l>10 - Champs électriques négatifs')
 #ax1.grid(True, alpha=0.3, linestyle='--')
 
@@ -169,7 +169,7 @@ pcm_pos = ax2.pcolormesh(X_pos, Y_pos, Z_pos, cmap=custom_cmap, shading='auto')
 ax2.set_xlabel('Amplitude du champ électrique (V/m)')
 #ax2.set_xlabel('Durée du pulse (s)')
 ax2.set_title('Population l>10 - Champs électriques positifs')
-ax2.set_yscale('linear')
+ax2.set_yscale('log')
 #ax2.grid(True, alpha=0.3, linestyle='--')
 
 # Barre de couleur commune (à droite)

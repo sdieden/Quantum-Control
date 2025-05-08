@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division, print_function, absolute_import
-from arc_sam.alkali_atom_functions import AlkaliAtom, printStateLetter
-from arc_sam.wigner import Wigner3j, Wigner6j
+from arc.alkali_atom_functions import AlkaliAtom, printStateLetter
+from arc.wigner import Wigner3j, Wigner6j
 from scipy.constants import physical_constants
 import csv
 
@@ -9,7 +9,7 @@ import os
 import numpy as np
 from math import sqrt
 
-from arc_sam._database import sqlite3, UsedModulesARC
+from arc._database import sqlite3, UsedModulesARC
 
 sqlite3.register_adapter(np.float64, float)
 sqlite3.register_adapter(np.float32, float)
@@ -232,9 +232,12 @@ class DivalentAtom(AlkaliAtom):
                 " Only quantum defects will be used."
             )
         else:
+            #levels = self._parseLevelsFromNIST(
+            #    os.path.join(self.dataFolder, self.levelDataFromNIST)
+            #)
             levels = self._parseLevelsFromNIST(
-                os.path.join(self.dataFolder, self.levelDataFromNIST)
-            )
+                os.path.join('/Users/sam/PycharmProjects/Quantum-Control/NewModule/arc/data'  , self.levelDataFromNIST)
+            ) # TODO : self added path, normally it is "self.dataFolder"
             br = 0
             while br < len(levels):
                 self._addEnergy(*levels[br])
@@ -270,6 +273,7 @@ class DivalentAtom(AlkaliAtom):
             energy: energy in cm^-1 relative to the ground state
         """
         c = self.conn.cursor()
+        print(n,l,j,s,energy)
         c.execute(
             "INSERT INTO energyLevel VALUES (?,?,?,?,?)",
             (

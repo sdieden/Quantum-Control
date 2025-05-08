@@ -13,7 +13,7 @@ labels etc.
 
 from __future__ import division, print_function, absolute_import
 
-from arc_sam._database import sqlite3, UsedModulesARC
+from arc._database import sqlite3, UsedModulesARC
 import csv
 import gzip
 from math import exp, sqrt
@@ -843,7 +843,9 @@ class AlkaliAtom(object):
                 + modifiedRRcoef[4] / ((n - modifiedRRcoef[0]) ** 8)
                 + modifiedRRcoef[5] / ((n - modifiedRRcoef[0]) ** 10)
             )
+
         elif l < 65 and s == 0:  # singlet alkali
+            print('everything is fine')
 
             # find correct part in table of quantum defects
             modifiedRRcoef = self.quantumDefect[round(floor(s) + s + j - l)][l]
@@ -855,10 +857,15 @@ class AlkaliAtom(object):
                     + modifiedRRcoef[4] / ((n - modifiedRRcoef[0]) ** 8)
                     + modifiedRRcoef[5] / ((n - modifiedRRcoef[0]) ** 10)
             )
+            print(f'quantum defect for {l}=', defect)
         else:
+            #print('here')
             # use \delta_\ell = \delta_g * (4/\ell)**5
             # from https://journals.aps.org/pra/abstract/10.1103/PhysRevA.74.062712
             defect = self.quantumDefect[0][4][0] * (4 / l) ** 5
+            print(f'quantum defect for {l}=', defect)
+
+
         return defect
 
     def getRadialMatrixElement(

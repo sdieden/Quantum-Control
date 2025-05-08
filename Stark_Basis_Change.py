@@ -367,7 +367,7 @@ def main():
     Main function to demonstrate usage of the conversion functions.
     """
     # Import necessary libraries
-    from arc_sam import Calcium40, StarkMap
+    from arc import Calcium40, StarkMap
 
     # Initialize atom and StarkMap object
     atom = Calcium40()
