@@ -65,15 +65,27 @@ for dt in dt_values:
     l_sup_10_populations = []
     
     for i, pulse_list in enumerate(pulse_square):
-        #print("enumerage number",i)
+
         # Chaque pulse est appliqué sur l'état initial initial_wf, pas sur l'état résultant du pulse précédent
         x = pulse_evolution(pulse_list, initial_coupled=initial_wf, calc=calc)
-        # Ne garde que l'état final (après le pulse)
+
+        # Ne garde que l'etat final (après le pulse)
         output_coef.append(x[-1])
-        # Calcule la population pour l'état final seulement
+
+        # Calcule la population pour l'etat final seulement
         y = np.abs(x[-1])**2
         output_pop.append(y)
-        """
+
+        array_idx = []
+        array_pop = []
+        for l in range(lmax-10):
+            array_idx.append(l)
+            if array_idx[-1] < len(y):
+                array_pop.append(y[array_idx[-1]])
+            else:
+                print(f"Avertissement: l'index pour l=?? est hors limites (taille: {len(y)})")
+                break
+
         # Calcule la population pour l=10
         l10_index = calc.indexOfCoupledState+(10-l)
         if l10_index < len(y):
@@ -82,7 +94,7 @@ for dt in dt_values:
             pop_l_10 = 0
             print(f"Avertissement: l'index {l10_index} pour l=10 est hors limites (taille: {len(y)})")
         l10_populations.append(pop_l_10)
-        """
+
         # Calcule la population pour l>10
         pop_l_sup_10 = 0
         start_idx = calc.indexOfCoupledState+(10-l)
