@@ -31,22 +31,22 @@ initial_wf[calc.indexOfCoupledState]= 1
 
 # Définition des paramètres pour les champs électriques
 Emin = 8e2    # 800 V/m
-Emax = 20e2   # 1500 V/m
+Emax = 15e2   # 1500 V/m
 
 N = 200
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100 #[V/m]
 step = round((Emax - Emin) / N)
-F_pos = np.linspace(Emin, Emax, num = 200)
-F_neg = np.linspace(-Emax, -Emin, num = 200)
+F_pos = np.linspace(Emin, Emax, num = 100)
+F_neg = np.linspace(-Emax, -Emin, num = 100)
 
 a = np.concatenate((F_pos, F_neg))
 a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant
 
 
 #dt_values = np.logspace(-7.221, -7.15, num = N)# Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
-#dt_values = np.logspace(-9,-8, num = N)
-dt_values = np.linspace(10e-9,10e-8, num = N)
+dt_values = np.logspace(-9,-6, num = N)
+#dt_values = np.linspace(10e-9,10e-8, num = N)
 # Dictionnaires pour stocker les résultats pour chaque valeur de dt
 all_l_populations = {}
 all_l_sup_10_populations = {}
@@ -79,9 +79,11 @@ for dt in dt_values:
         output_coef.append(x[-1])
 
         # Calcule la population pour l'etat final seulement
+        x_conj = np.conj(x)
+        #y = x*x_conj
         y = np.abs(x[-1])**2
         output_pop.append(y)
-
+        #print(f"{i}'th state give goes from old pop {y_old} -> to new pop {y}")
         # Calculer la population pour chaque l de 10 à 34
         for l_level in range(10, 35):
             # Trouver tous les états avec l = l_level
@@ -116,7 +118,7 @@ print(f"Résultats sauvegardés dans{name}")
 
 print("plotting...")
 
-selected_l_levels = [10, 12, 20, 25, 30, 34]  # Niveaux l sélectionnés pour visualisation
+selected_l_levels = [10, 11, 12, 13, 14, 15]  # Niveaux l sélectionnés pour visualisation
 
 # Créer une figure avec plusieurs sous-graphiques (un par niveau l sélectionné)
 fig, axes = plt.subplots(len(selected_l_levels), 2, figsize=(16, 4 * len(selected_l_levels)))
@@ -177,7 +179,7 @@ for i, l_level in enumerate(selected_l_levels):
 plot_filename = f'Plot/heatmap_selected_l_levels_{date.strftime("%Y%m%d_%H%M%S")}.png'
 plt.savefig(plot_filename)
 print(f"Visualisation sauvegardée dans {plot_filename}")
-
+plt.show()
 fin_plot = time.time()
 
 temps_calcul = fin_calcul - debut
