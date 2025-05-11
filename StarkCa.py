@@ -13,8 +13,8 @@ calc = StarkMap(Calcium40())
 
 # Target state
 n0 = 35
-l0 = 34
-j0 = 34
+l0 = 3
+j0 = 3
 mj0 = 0
 s0 = 0
  # Define max/min n values in basis
@@ -44,7 +44,7 @@ calc.exportData(exportdata)
 
 # Show Sark Map
 calc.plotLevelDiagram(progressOutput=True, units=0, highlightState=True)
-calc.ax.set_ylim(-105, -85)
+calc.ax.set_ylim(-95, -85)
 calc.showPlot(interactive=False)
 
 
