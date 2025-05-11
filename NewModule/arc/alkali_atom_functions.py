@@ -845,7 +845,8 @@ class AlkaliAtom(object):
             )
 
         elif l < 65 and s == 0:  # singlet alkali
-            print('everything is fine')
+            if l == 4 :
+                print('here comes the G')
 
             # find correct part in table of quantum defects
             modifiedRRcoef = self.quantumDefect[round(floor(s) + s + j - l)][l]
