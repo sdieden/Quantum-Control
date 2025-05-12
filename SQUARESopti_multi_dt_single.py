@@ -30,10 +30,10 @@ initial_wf = np.zeros(len(calc.basisStates), dtype=complex)
 initial_wf[calc.indexOfCoupledState] = 1
 
 # Définition des paramètres pour les champs électriques
-Emin = 8e2  # 800 V/m
-Emax = 15e2  # 1500 V/m
+Emin = 0.0#8e2  # 800 V/m
+Emax = 8e2#15e2  # 1500 V/m
 
-N = 200
+N = 100
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100  # [V/m]
 step = round((Emax - Emin) / N)
@@ -52,7 +52,7 @@ all_l_sup_10_populations = {}
 # initialize dictionnaries for every l = 10 - 35
 for dt in dt_values:
     all_l_populations[dt] = {}
-    for l_level in range(10, 35):  # l de 10 à 34 inclus
+    for l_level in range(0, 35):  # l de 10 à 34 inclus
         all_l_populations[dt][l_level] = []
 
 print("Starting detailed l-level population analysis...")
@@ -81,7 +81,7 @@ for dt in dt_values:
         output_pop.append(y)
 
         # Calculer la population pour chaque l de 10 à 34
-        for l_level in range(10, 35):
+        for l_level in range(0, 35):
             # Trouver tous les états avec l = l_level
             l_pop = 0.0
             for idx, state in enumerate(calc.basisStates):
@@ -102,7 +102,7 @@ save_dict = {
     'dt_values': dt_values,
     'amplitudes': a
 }
-for l_level in range(10, 35):
+for l_level in range(0, 35):
     l_key = f'l{l_level}_pop'
     l_data = {}
     for dt in dt_values:
@@ -113,7 +113,7 @@ print(f"Résultats sauvegardés dans{name}")
 
 print("plotting...")
 
-selected_l_levels = [10, 12, 20, 25, 30, 34]  # Niveaux l sélectionnés pour visualisation
+selected_l_levels = [0, 1, 2, 3, 4, 5]  # Niveaux l sélectionnés pour visualisation
 
 # Créer une figure avec plusieurs sous-graphiques (un par niveau l sélectionné)
 fig, axes = plt.subplots(len(selected_l_levels), 2, figsize=(16, 4 * len(selected_l_levels)))
