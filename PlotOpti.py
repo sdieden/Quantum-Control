@@ -3,22 +3,22 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 
 # Charger les données
-data = np.load("Plot/resultats_multi_dt_lin2025-04-30 19:09:52.393027.npz", allow_pickle=True)
+data = np.load("Plot/resultats_multi_dt_lin2025-05-12 20:50:56.516904.npz", allow_pickle=True)
 print(data)
 dt_values = data['dt_values']
 amplitudes = data['amplitudes']
-l10_pop = data['l10_pop'].item()
+#l3_pop = data['l3_pop'].item()
 l_sup_10_pop = data['l_sup_10_pop'].item()
 
 # Création des matrices pour la visualisation
 X, Y = np.meshgrid(amplitudes, dt_values)
 Z_l_sup_10 = np.zeros((len(dt_values), len(amplitudes)))
-Z_l_12 = np.zeros((len(dt_values), len(amplitudes)))
+#Z_l_3 = np.zeros((len(dt_values), len(amplitudes)))
 # Remplir les matrices
 for i, dt in enumerate(dt_values):
     for j, amp in enumerate(amplitudes):
         Z_l_sup_10[i, j] = l_sup_10_pop[dt][j]
-        #Z_l_12[i, j] = l10_pop[dt][j]
+        #Z_l_3[i, j] = l3_pop[dt][j]
 
 # Séparer les données négatives et positives
 neg_indices = np.where(amplitudes < 0)[0]
@@ -27,19 +27,8 @@ pos_indices = np.where(amplitudes >= 0)[0]
 X_neg, X_pos = X[:, neg_indices], X[:, pos_indices]
 Y_neg, Y_pos = Y[:, neg_indices], Y[:, pos_indices]
 Z_neg, Z_pos = Z_l_sup_10[:, neg_indices], Z_l_sup_10[:, pos_indices]
-#_neg_single, Z_pos_single = Z_l_12[:, neg_indices], Z_l_12[:, pos_indices]
-"""colors = [(1, 1, 1),        # blanc pour très faibles valeurs (0)
-          (0.8, 0.9, 1),    # bleu très clair (0.1)
-          (0.3, 0.5, 0.9),  # bleu moyen (0.2)
-          (0, 0.2, 0.8),    # bleu foncé (0.25)
-          (0, 0.7, 0.2),    # vert fixé à 0.35
-          (1, 0.5, 0),      # orange fixé à 0.5
-          (1, 0.3, 0.6),    # rose clair (0.6)
-          (0.7, 0, 0),      # rouge à 0.75
-          (0, 0, 0)]        # noir à 1.0
+#Z_neg_single, Z_pos_single = Z_l_3[:, neg_indices], Z_l_3[:, pos_indices]
 
-positions = [0, 0.1, 0.15, 0.25, 0.30, 0.40, 0.55, 0.65, 1]
-"""
 colors = [(1, 1, 1),       # blanc pour très faibles valeurs
           (0.8, 0.9, 1),   # bleu très clair
           (0.3, 0.5, 0.9), # bleu moyen
