@@ -77,10 +77,11 @@ for dt in dt_values:
 
         # Chaque pulse est appliqué sur l'état initial initial_wf, pas sur l'état résultant du pulse précédent
         x = pulse_evolution(pulse_list, initial_coupled=initial_wf, calc=calc)
+        idx_amplitudes = pulse_list[0][0]
+        idx_dt = dt
         all_l_coefficients[dt][pulse_list[0][0]] = x
-
         # Ne garde que l'etat final (après le pulse)
-        output_coef.append(x[-1])
+        output_coef.append(x[-1]) # dans notre cas, le pulse_square n'a que un pulse, donc 0 soucis
 
         # Calcule la population
         y = np.abs(x[-1]) ** 2
@@ -102,13 +103,12 @@ for dt in dt_values:
         # Afficher la progression
         if (i + 1) % 10 == 0:
             print(f"  Processed {i + 1}/{len(pulse_square)} pulses")
-    for l in range(10,lmax-1):
-        searching_optimized_wf = np.max(all_l_populations[dt][l], axis=0)
-        if searching_optimized_wf > optimized_wavefuction_population:
-            optimized_wavefuction_population = searching_optimized_wf
-            idx = l
-            idx_dt = dt
-            idx_amplitudes = pulse_list[0][0] # TODO : cannot work, how to find the amplitude related to ?
+        for l in range(10,lmax-1):
+            searching_optimized_wf = np.max(all_l_populations[dt][l], axis=0)
+            if searching_optimized_wf > optimized_wavefuction_population:
+                optimized_wavefuction_population = searching_optimized_wf
+                idx = l
+
 
 
 fin_calcul = time.time()
@@ -127,3 +127,53 @@ for l_level in range(0, 35):
     save_dict[l_key] = l_data
 np.savez(name, **save_dict)
 print(f"Résultats sauvegardés dans{name}")
+
+def optimization_pulse(dt_array, amplitudes_array,initial_wf,calc=calc):
+# initialization of dictionnaries
+    all_l_populations = {}
+    all_l_sup_10_populations = {}
+    all_l_coefficients = {}
+    for dt in dt_array:
+        all_l_populations[dt] = {}
+        all_l_coefficients[dt] = {}
+        for l_level in range(0, 35):
+            all_l_populations[dt][l_level] = []
+        for amplitude in amplitudes_array:
+            all_l_coefficients[dt][amplitude] = np.zeros(len(calc.basisStates), dtype=complex)
+    optimized_wavefuction_population = 0
+    optimized_pulse_sequence_time = []
+    optimized_pulse_sequence_amplitude = []
+# TODO : the for loop here could be an alone function
+    for dt in dt_array:
+        print(f"\n=== Calculs avec dt = {dt} secondes ===")
+        pulse_square = []
+        for amplitude in amplitudes_array:
+            pulse_square.append([(amplitude, dt)])
+
+        output_coef = []
+        output_pop = []
+        for i, pulse_list in enumerate(pulse_square):
+            x = pulse_evolution(pulse_list, initial_coupled=initial_wf, calc=calc)
+            all_l_coefficients[dt][pulse_list[0][0]] = x[-1]
+            output_coef.append(x[-1])
+            y = np.abs(x[-1]) ** 2
+            output_pop.append(y)
+
+            for l_level in range(10,lmax-1):
+                l_pop = 0.0
+                for idx, state in enumerate(calc.basisStates):
+                    if state[1] == l_level: l_pop += y[idx]
+                all_l_populations[dt][l_level].append(l_pop)
+            if (i + 1) % 10 == 0:
+                print(f"  Processed {i + 1}/{len(pulse_square)} pulses")
+            for l in range(10,lmax-1):
+                searching_optimized_wf = np.max(all_l_populations[dt][l], axis=0)
+                if searching_optimized_wf > optimized_wavefuction_population:
+                    optimized_wavefuction_population = searching_optimized_wf
+                    idx = l
+                    idx_amplitudes = pulse_list[0][0]
+                    idx_dt = dt
+    optimized_pulse_sequence_time.append(idx_dt)
+    optimized_pulse_sequence_amplitude.append(idx_amplitudes)
+
+# TODO : check if state to be optimized must be calculated once for all or can be reevaluated at each point
