@@ -18,8 +18,8 @@ j0 = 3
 mj0 = 0
 s0 = 0
  # Define max/min n values in basis
-nmin = n0 - 10
-nmax = n0 + 10
+nmin = n0 - 3
+nmax = n0 + 3
 
 
 # Maximum value of l to include (l~20 gives good convergence for states with l<5)
