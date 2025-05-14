@@ -202,6 +202,61 @@ def state_population(psi_array):
         pop_states.append(pop_state)
     return pop_states
 
+def optimization_pulse(dt_array, amplitudes_array,initial_wf,calc):
+# initialization of dictionnaries
+    idx_dt = None
+    idx_amplitudes = None
+    final_wf = None
+    all_l_populations = {}
+    all_l_sup_10_populations = {}
+    all_l_coefficients = {}
+    for dt in dt_array:
+        all_l_populations[dt] = {}
+        all_l_coefficients[dt] = {}
+        for l_level in range(0, 35):
+            all_l_populations[dt][l_level] = []
+        for amplitude in amplitudes_array:
+            all_l_coefficients[dt][amplitude] = np.zeros(len(calc.basisStates), dtype=complex)
+    optimized_wavefuction_population = 0
+    optimized_pulse_sequence_time = []
+    optimized_pulse_sequence_amplitude = []
+# TODO : the for loop here could be an alone function
+    for dt in dt_array:
+        print(f"\n=== Calculs avec dt = {dt} secondes ===")
+        pulse_square = []
+        for amplitude in amplitudes_array:
+            pulse_square.append([(amplitude, dt)])
+
+        output_coef = []
+        output_pop = []
+        for i, pulse_list in enumerate(pulse_square):
+            x = pulse_evolution(pulse_list, initial_coupled=initial_wf, calc=calc)
+            all_l_coefficients[dt][pulse_list[0][0]] = x[-1]
+            output_coef.append(x[-1])
+            y = np.abs(x[-1]) ** 2
+            output_pop.append(y)
+
+            for l_level in range(10,lmax-1):
+                l_pop = 0.0
+                for idx, state in enumerate(calc.basisStates):
+                    if state[1] == l_level: l_pop += y[idx]
+                all_l_populations[dt][l_level].append(l_pop)
+            if (i + 1) % 10 == 0:
+                print(f"  Processed {i + 1}/{len(pulse_square)} pulses")
+            for l in range(10,lmax-1):
+                searching_optimized_wf = np.max(all_l_populations[dt][l], axis=0)
+                if searching_optimized_wf > optimized_wavefuction_population:
+                    final_wf = x[-1]
+                    optimized_wavefuction_population = searching_optimized_wf
+                    idx = l
+                    idx_amplitudes = pulse_list[0][0]
+                    idx_dt = dt
+    optimized_pulse_sequence_time.append(idx_dt)
+    optimized_pulse_sequence_amplitude.append(idx_amplitudes)
+    return optimized_pulse_sequence_time, optimized_pulse_sequence_amplitude, all_l_populations, all_l_sup_10_populations, all_l_coefficients, final_wf
+# TODO : check if state to be optimized must be calculated once for all or can be reevaluated at each point
+
+
 
 # Déplacer le code d'exécution dans le bloc if __name__ == "__main__":
 if __name__ == "__main__":
@@ -232,9 +287,9 @@ if __name__ == "__main__":
     initial_coupled[calc.indexOfCoupledState] = 1
     
     # Test serie de pulses
-    pulse_list = [(30, 5e-7), (0, 10e-7), (20, 1e-7), (0, 10e-7), (
+    pulse_list = [(30, 5e-7), (0, 1e-7), (20, 1e-7), (0, 10e-7), (
     50, 10e-7)]  # liste des pulses avec amplitude[V/m] + durée[s] #contient l'ensemble des états après chaque pulse
-    pulse_list_test = [(30, 5e-7), (20, 1e-7), (40, 1e-7), (60, 1e-7), (80, 1e-7)]
+    pulse_list_test = [(30, 5e-7), (20, 1e-7), (50, 1e-7), (60, 1e-7), (80, 1e-7)]
     initial_coupled_test = np.zeros(len(calc.basisStates), dtype=np.complex128)
     ##1st test
 
@@ -289,8 +344,8 @@ if __name__ == "__main__":
     plt.figure(figsize=(10, 6))
 
     # Tracer les populations en échelle logarithmique
-    plt.semilogy(pop_states[-1], label='psi_evolution (3ème pulse)', marker='o')
-    plt.semilogy(pop_states_test[-1], label='psi_evolution_test (1er pulse)', marker='x')
+    plt.semilogy(pop_states[3], label='psi_evolution (3e pulse)', marker='o')
+    plt.semilogy(pop_states_test[2], label='psi_evolution_test (2er pulse)', marker='x')
     #plt.plot(pop_states[-1], label='psi_evolution (3ème pulse)', marker='o')
     #plt.plot(pop_states_test[-1], label='psi_evolution_test (1er pulse)', marker='x')
     # Personnalisation du graphique
