@@ -4,7 +4,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from scipy.fft import rfft,fft, ifft, fftshift, fftfreq
 
 # Charger les données
-data = np.load("Plot/resultats_multi_dt_lin2025-05-12 20:50:56.516904.npz", allow_pickle=True)
+data = np.load("Plot/resultats_multi_dt_lin2025-05-12 12:43:22.130483.npz", allow_pickle=True)
 #print(data)
 #print(data['dt_values'])
 dt_values = data['dt_values']
