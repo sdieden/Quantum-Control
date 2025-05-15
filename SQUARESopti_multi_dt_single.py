@@ -33,7 +33,7 @@ initial_wf[calc.indexOfCoupledState] = 1
 Emin = 0.0#8e2  # 800 V/m
 Emax = 15e2#15e2  # 1500 V/m
 
-N = 1500
+N = 500
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100  # [V/m]
 step = round((Emax - Emin) / N)
@@ -44,7 +44,7 @@ a = np.concatenate((F_pos, F_neg))
 a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant
 
 # dt_values = np.logspace(-7.221, -7.15, num = N)# Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
-dt_values = np.logspace(-10,-6, num = N)
+dt_values = np.linspace(1e-10,30e-10, num = N)
 #dt_values = np.linspace(10e-9, 10e-8, num=N)
 # Dictionnaires pour stocker les résultats pour chaque valeur de dt
 all_l_populations = {}
