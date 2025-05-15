@@ -202,162 +202,356 @@ def state_population(psi_array):
         pop_states.append(pop_state)
     return pop_states
 
-def optimization_pulse(dt_array, amplitudes_array,initial_wf,calc):
-# initialization of dictionnaries
+def searching_best_pulse(dt_array, amplitudes_array, initial_wf, calc, lmin = 10, lmax=35):
+    """
+    Recherche le meilleur pulse unique pour maximiser la population dans un état cible.
+    
+    Args:
+        dt_array: Liste des durées possibles pour les pulses
+        amplitudes_array: Liste des amplitudes possibles pour les pulses
+        initial_wf: État initial
+        calc: Objet StarkMap initialisé
+        lmax: Valeur maximale de l pour les états à considérer (par défaut 35)
+    
+    Returns:
+        optimized_pulse_sequence_time: Liste contenant la durée optimale
+        optimized_pulse_sequence_amplitude: Liste contenant l'amplitude optimale
+        all_l_populations: Dictionnaire des populations pour chaque l
+        all_l_coefficients: Dictionnaire des coefficients pour chaque amplitude
+        final_wf: État final après application du pulse optimal
+    """
+    # Initialisation des variables
     idx_dt = None
     idx_amplitudes = None
     final_wf = None
     all_l_populations = {}
-    all_l_sup_10_populations = {}
     all_l_coefficients = {}
+    
+    # Initialisation des dictionnaires
     for dt in dt_array:
         all_l_populations[dt] = {}
         all_l_coefficients[dt] = {}
-        for l_level in range(0, 35):
+        for l_level in range(lmin, lmax):  # On commence à l=10 comme dans les calculs
             all_l_populations[dt][l_level] = []
         for amplitude in amplitudes_array:
             all_l_coefficients[dt][amplitude] = np.zeros(len(calc.basisStates), dtype=complex)
-    optimized_wavefuction_population = 0
+    
+    optimized_wavefunction_population = 0
     optimized_pulse_sequence_time = []
     optimized_pulse_sequence_amplitude = []
-# TODO : the for loop here could be an alone function
+    
+    # Test de toutes les combinaisons possibles
     for dt in dt_array:
         print(f"\n=== Calculs avec dt = {dt} secondes ===")
         pulse_square = []
+        
+        # Création de la liste des pulses à tester
         for amplitude in amplitudes_array:
             pulse_square.append([(amplitude, dt)])
-
-        output_coef = []
-        output_pop = []
+        
+        # Test de chaque pulse
         for i, pulse_list in enumerate(pulse_square):
+            # Application du pulse
             x = pulse_evolution(pulse_list, initial_coupled=initial_wf, calc=calc)
             all_l_coefficients[dt][pulse_list[0][0]] = x[-1]
-            output_coef.append(x[-1])
+            
+            # Calcul des populations
             y = np.abs(x[-1]) ** 2
-            output_pop.append(y)
-
-            for l_level in range(10,lmax-1):
+            
+            # Calcul des populations par niveau l
+            for l_level in range(10, lmax):
                 l_pop = 0.0
                 for idx, state in enumerate(calc.basisStates):
-                    if state[1] == l_level: l_pop += y[idx]
+                    if state[1] == l_level:
+                        l_pop += y[idx]
                 all_l_populations[dt][l_level].append(l_pop)
-            if (i + 1) % 10 == 0:
-                print(f"  Processed {i + 1}/{len(pulse_square)} pulses")
-            for l in range(10,lmax-1):
-                searching_optimized_wf = np.max(all_l_populations[dt][l], axis=0)
-                if searching_optimized_wf > optimized_wavefuction_population:
+                
+                # Mise à jour du meilleur pulse si nécessaire
+                if l_pop > optimized_wavefunction_population:
+                    optimized_wavefunction_population = l_pop
                     final_wf = x[-1]
-                    optimized_wavefuction_population = searching_optimized_wf
-                    idx = l
                     idx_amplitudes = pulse_list[0][0]
                     idx_dt = dt
+            
+            if (i + 1) % 10 == 0:
+                print(f"  Processed {i + 1}/{len(pulse_square)} pulses")
+    
+    # Stockage du meilleur pulse trouvé
     optimized_pulse_sequence_time.append(idx_dt)
     optimized_pulse_sequence_amplitude.append(idx_amplitudes)
-    return optimized_pulse_sequence_time, optimized_pulse_sequence_amplitude, all_l_populations, all_l_sup_10_populations, all_l_coefficients, final_wf
-# TODO : check if state to be optimized must be calculated once for all or can be reevaluated at each point
+    
+    return optimized_pulse_sequence_time, optimized_pulse_sequence_amplitude, all_l_populations, all_l_coefficients, final_wf
 
+def optimize_l_population(target_l, dt_array, amplitudes_array, initial_wf, calc, n=35):
+    """
+    Optimise la population d'un niveau l spécifique pour n=35.
+    
+    Args:
+        target_l: Le niveau l cible à optimiser
+        dt_array: Liste des durées possibles pour les pulses
+        amplitudes_array: Liste des amplitudes possibles pour les pulses
+        initial_wf: État initial
+        calc: Objet StarkMap initialisé
+        n: Nombre quantique principal (par défaut 35)
+    
+    Returns:
+        best_pulse: Le meilleur pulse trouvé (amplitude, durée)
+        best_population: La population maximale atteinte
+        all_populations: Dictionnaire des populations pour chaque combinaison
+    """
+    # Initialisation des variables
+    best_population = 0
+    best_pulse = None
+    all_populations = {}
+    
+    # Création d'une grille de résultats
+    for dt in dt_array:
+        all_populations[dt] = {}
+        for amplitude in amplitudes_array:
+            all_populations[dt][amplitude] = 0
+    
+    print(f"\nOptimisation de la population pour l = {target_l}")
+    print("Test des différentes combinaisons...")
+    
+    # Test de toutes les combinaisons
+    for dt in dt_array:
+        for amplitude in amplitudes_array:
+            # Application du pulse
+            pulse = [(amplitude, dt)]
+            wf_after_pulse = pulse_evolution_final(pulse, initial_wf, calc)
+            
+            # Calcul de la population pour le niveau l cible
+            populations = np.abs(wf_after_pulse) ** 2
+            l_population = 0.0
+            
+            for idx, state in enumerate(calc.basisStates):
+                if state[1] == target_l and state[0] == n:  # Vérifie n et l
+                    l_population += populations[idx]
+            
+            # Stockage du résultat
+            all_populations[dt][amplitude] = l_population
+            
+            # Mise à jour du meilleur pulse si nécessaire
+            if l_population > best_population:
+                best_population = l_population
+                best_pulse = (amplitude, dt)
+                print(f"  Nouvelle meilleure population trouvée :")
+                print(f"    Amplitude : {amplitude} V/m")
+                print(f"    Durée : {dt} s")
+                print(f"    Population : {l_population:.6f}")
+    
+    # Création du graphique
+    plt.figure(figsize=(12, 8))
+    
+    # Préparation des données pour le graphique
+    dt_values = list(dt_array)
+    amp_values = list(amplitudes_array)
+    pop_matrix = np.zeros((len(dt_values), len(amp_values)))
+    
+    for i, dt in enumerate(dt_values):
+        for j, amp in enumerate(amp_values):
+            pop_matrix[i, j] = all_populations[dt][amp]
+    """
+    # Graphique en 3D
+    ax = plt.axes(projection='3d')
+    X, Y = np.meshgrid(amp_values, dt_values)
+    
+    # Tracé de la surface
+    surf = ax.plot_surface(X, Y, pop_matrix, cmap='viridis')
+    
+    # Personnalisation du graphique
+    ax.set_xlabel('Amplitude (V/m)')
+    ax.set_ylabel('Durée (s)')
+    ax.set_zlabel('Population')
+    ax.set_title(f'Population du niveau l={target_l} (n={n})')
+    
+    # Ajout d'une barre de couleur
+    plt.colorbar(surf, ax=ax, shrink=0.5, aspect=5)
+    
+    # Ajout d'un point pour le meilleur pulse
+    best_amp, best_dt = best_pulse
+    best_pop = all_populations[best_dt][best_amp]
+    ax.scatter([best_amp], [best_dt], [best_pop], color='red', s=100, label='Meilleur pulse')
+    
+    plt.show()
+    """
+    return best_pulse, best_population, all_populations
 
+def optimize_pulse_sequence(target_l, dt_array, amplitudes_array, initial_wf, calc, n=35, max_iterations=100, target_population=0.9):
+    """
+    Optimise une séquence de pulses pour maximiser la population d'un niveau l spécifique.
+    
+    Args:
+        target_l: Le niveau l cible à optimiser
+        dt_array: Liste des durées possibles pour les pulses
+        amplitudes_array: Liste des amplitudes possibles pour les pulses
+        initial_wf: État initial
+        calc: Objet StarkMap initialisé
+        n: Nombre quantique principal (par défaut 35)
+        max_iterations: Nombre maximum d'itérations (par défaut 100)
+        target_population: Population cible pour arrêter l'optimisation (par défaut 0.9)
+    
+    Returns:
+        best_sequence: Liste des meilleurs pulses trouvés [(amplitude1, durée1), ...]
+        best_population: La population maximale atteinte
+        populations_history: Liste des populations à chaque étape
+    """
+    print(f"\nOptimisation d'une séquence de pulses pour l = {target_l}")
+    print(f"Critères d'arrêt : {max_iterations} itérations max ou population > {target_population}")
+    
+    # Initialisation
+    best_sequence = []
+    populations_history = [0]  # Population initiale
+    current_wf = initial_wf
+    iteration = 0
+    
+    while iteration < max_iterations:
+        print(f"\n=== Pulse {iteration + 1} ===")
+        
+        # Optimisation du pulse actuel
+        best_pulse, current_pop, _ = optimize_l_population(
+            target_l, dt_array, amplitudes_array, current_wf, calc, n
+        )
+        
+        # Vérification si le pulse améliore la population
+        if current_pop <= populations_history[-1]:
+            print(f"La population n'augmente plus. Arrêt de l'optimisation.")
+            break
+        
+        # Mise à jour des résultats
+        best_sequence.append(best_pulse)
+        populations_history.append(current_pop)
+        
+        # Application du pulse pour l'itération suivante
+        current_wf = pulse_evolution_final([best_pulse], current_wf, calc)
+        
+        # Vérification du critère de population
+        if current_pop >= target_population:
+            print(f"Population cible atteinte ({current_pop:.6f} >= {target_population})")
+            break
+        
+        iteration += 1
+    
+    # Affichage des résultats
+    print("\nRésultats de l'optimisation :")
+    sequence_duration = 0
+    for i, (amp, dt) in enumerate(best_sequence):
+        print(f"Pulse {i+1}: amplitude = {amp} V/m, durée = {dt} s")
+        print(f"Population après pulse {i+1}: {populations_history[i+1]:.6f}")
+        sequence_duration += dt
+    sequence_duration *= 1e-6
+    print(f"Durée de la séquence : {sequence_duration*1e-6:.6f}")
+    # Création du graphique de la séquence
+    plt.figure(figsize=(15, 10))
+    
+    # Graphique des amplitudes
+    plt.subplot(2, 1, 1)
+    times = [0]
+    amplitudes = [0]
+    current_time = 0
+    
+    for amp, dt in best_sequence:
+        current_time += dt
+        times.extend([current_time - dt, current_time])
+        amplitudes.extend([amp, amp])
+    
+    plt.step(times, amplitudes, where='post', label='Amplitude')
+    plt.xlabel('Temps (s)')
+    plt.ylabel('Amplitude (V/m)')
+    plt.title('Séquence de pulses optimale')
+    plt.grid(True)
+    
+    # Graphique des populations
+    plt.subplot(2, 1, 2)
+    steps = range(len(populations_history))
+    plt.plot(steps, populations_history, 'o-', label='Population')
+    plt.axhline(y=target_population, color='r', linestyle='--', label='Population cible')
+    plt.xlabel('Étape')
+    plt.ylabel('Population')
+    plt.title('Évolution de la population')
+    plt.xticks(steps, ['Initial'] + [f'Après pulse {i+1}' for i in range(len(best_sequence))])
+    plt.grid(True)
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.show()
+    
+    return best_sequence, populations_history[-1], populations_history
 
 # Déplacer le code d'exécution dans le bloc if __name__ == "__main__":
 if __name__ == "__main__":
+    print("\n=== Test de optimize_pulse_sequence ===")
+    
+    # Initialisation de l'atome et du calcul
     atom = Calcium40()
     calc = StarkMap(atom)
-
+    
+    # Paramètres de base
     n = 35
     l = 3
     j = 3
     mj = 0
     s = 0
-    nmin = n - 3
-    nmax = n + 3
+    nmin = n - 1
+    nmax = n + 2
     lmax = nmax - 1
-
-    """
-    Rappel des unités atomiques  : 
-    action : hbar = 1 , hbar = 1.1*10^-34 J.s
-    energie : hartree, 1 Hartree = 4.359*10^-18 J
-    temps : 1 t.ua = 2.418*10^-17 s
-    champ électrique : 1 ce.ua = 5.14*10^11V/m
-
-    """
-    calc.defineBasis(n,l,j,mj,nmin,nmax,lmax,s=s, progressOutput=True)
+    
+    print("\nParamètres de base :")
+    print(f"n = {n}, l = {l}, j = {j}, mj = {mj}")
+    print(f"nmin = {nmin}, nmax = {nmax}, lmax = {lmax}")
+    
+    # Initialisation de la base
+    calc.defineBasis(n, l, j, mj, nmin, nmax, lmax, s=s, progressOutput=True)
     
     # Création de l'état initial
-    initial_coupled = np.zeros(len(calc.basisStates), dtype=np.complex128)
-    initial_coupled[calc.indexOfCoupledState] = 1
+    initial_wf = np.zeros(len(calc.basisStates), dtype=np.complex128)
+    initial_wf[calc.indexOfCoupledState] = 1
     
-    # Test serie de pulses
-    pulse_list = [(30, 5e-7), (0, 1e-7), (20, 1e-7), (0, 10e-7), (
-    50, 10e-7)]  # liste des pulses avec amplitude[V/m] + durée[s] #contient l'ensemble des états après chaque pulse
-    pulse_list_test = [(30, 5e-7), (20, 1e-7), (50, 1e-7), (60, 1e-7), (80, 1e-7)]
-    initial_coupled_test = np.zeros(len(calc.basisStates), dtype=np.complex128)
-    ##1st test
-
-    # for i in range(len(initial_coupled_test)):
-    #    initial_coupled_test[i] = 1/np.sqrt(len(calc.basisStates))
-    ##2nd test
-    # initial_coupled_test[calc.indexOfCoupledState-2] = 1/np.sqrt(2)
-    # initial_coupled_test[calc.indexOfCoupledState-3] = 1/np.sqrt(2)
-
-    # 3d test
-    initial_coupled_test[calc.indexOfCoupledState - 2] = 1
-    #print(calc.basisStates[calc.indexOfCoupledState - 2])
-    #print(initial_coupled_test)
-    psi_evolution = pulse_evolution(pulse_list, initial_coupled, calc)
-    psi_evolution_test = pulse_evolution(pulse_list_test, initial_coupled, calc)
-    pop_states = []  # population des états, cad juste abs(coef)**2
-    pop_states_test = []
-    # Boucle de vérification et stockage
-    for i, psi in enumerate(psi_evolution):
-        # Calcul de la population totale
-        pop_total = np.sum(np.abs(psi) ** 2)
-
-        # Calcul des populations individuelles
-        pop_state = np.abs(psi) ** 2  # Conversion en liste Python
-
-        # Stockage des résultats
-        pop_states.append(pop_state)
-
-        # Affichage de la population totale
-        # print(f"Population après pulse {i}: {pop_total:.15f}")
-    for i, psi in enumerate(psi_evolution_test):
-        # Calcul de la population totale
-        pop_total_test = np.sum(np.abs(psi) ** 2)
-
-        # Calcul des populations individuelles
-        pop_state_test = np.abs(psi) ** 2  # Conversion en liste Python
-
-        # Stockage des résultats
-        pop_states_test.append(pop_state_test)
-
-        # Affichage de la population totale
-        # print(f"Population après pulse {i}: {pop_total_test:.15f}")
-
-    # Exemple d'accès aux données
-
-    # print("\nPopulation de tous les états après le 1er pulse:", pop_states[1])
-    # print("Population du 5ème état après le 2ème pulse:", pop_states[2][4])
-
-    import matplotlib.pyplot as plt
-
-    # Création du plot logarithmique
-    plt.figure(figsize=(10, 6))
-
-    # Tracer les populations en échelle logarithmique
-    plt.semilogy(pop_states[3], label='psi_evolution (3e pulse)', marker='o')
-    plt.semilogy(pop_states_test[2], label='psi_evolution_test (2er pulse)', marker='x')
-    #plt.plot(pop_states[-1], label='psi_evolution (3ème pulse)', marker='o')
-    #plt.plot(pop_states_test[-1], label='psi_evolution_test (1er pulse)', marker='x')
-    # Personnalisation du graphique
-    plt.xlabel('Index de l\'état')
-    plt.ylabel('Population (échelle log)')
-    plt.title('Comparaison des populations d\'états\naprès application d\'un pulse de 20V/m pendant 1e-7s')
-    plt.grid(True)
-    plt.legend()
-
-    # Ajuster les limites de l'axe y pour mieux voir les petites valeurs
-    plt.ylim(1e-10, 1.1)
-
-    plt.show()
+    print(f"\nÉtat initial :")
+    print(f"Index de l'état couplé : {calc.indexOfCoupledState}")
+    print(f"État couplé : {calc.basisStates[calc.indexOfCoupledState]}")
+    
+    # Paramètres de test
+    N = 100
+    dt_array = np.logspace(-10, -9, N)  # 5 durées entre 1e-7 et 1e-6 secondes
+    amplitudes_array = np.linspace(20, 100, N)  # 5 amplitudes entre 20 et 100 V/m
+    
+    print("\nParamètres de test :")
+    print(f"Durées : {dt_array}")
+    print(f"Amplitudes : {amplitudes_array}")
+    
+    # Optimisation de la séquence pour un niveau l spécifique
+    target_l = 10  # Niveau l à optimiser
+    best_sequence, best_pop, pop_history = optimize_pulse_sequence(
+        target_l,
+        dt_array,
+        amplitudes_array,
+        initial_wf,
+        calc,
+        max_iterations=100,
+        target_population=0.1
+    )
+    
+    print(f"\nRésultats de l'optimisation pour l = {target_l}:")
+    print(f"Nombre de pulses dans la séquence : {len(best_sequence)}")
+    for i, (amp, dt) in enumerate(best_sequence):
+        print(f"Pulse {i+1}: amplitude = {amp} V/m, durée = {dt*1e6:.3f} µs")
+    print(f"Population maximale atteinte : {best_pop:.6f}")
+    
+    # Vérification de la normalisation finale
+    final_wf = pulse_evolution_final(best_sequence, initial_wf, calc)
+    final_pop = np.sum(np.abs(final_wf) ** 2)
+    print(f"\nVérification de la normalisation finale : {final_pop:.10f}")
+    
+    # Affichage des populations significatives par niveau l
+    print("\nPopulations significatives par niveau l :")
+    populations = np.abs(final_wf) ** 2
+    for l_level in range(10, lmax):
+        l_pop = 0.0
+        for idx, state in enumerate(calc.basisStates):
+            if state[1] == l_level:
+                l_pop += populations[idx]
+        if l_pop > 1e-10:
+            print(f"l = {l_level}: {l_pop:.6f}")
 
 
