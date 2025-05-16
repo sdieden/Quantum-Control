@@ -241,12 +241,12 @@ def searching_best_pulse(dt_array, amplitudes_array, initial_wf, calc, lmin = 10
     optimized_pulse_sequence_amplitude = []
     
     # Test de toutes les combinaisons possibles
-    for dt in dt_array:
-        print(f"\n=== Calculs avec dt = {dt} secondes ===")
-        pulse_square = []
+    for amplitude in amplitudes_array:
+        print(f"\n=== Calculs avec amplitude = {amplitude} V/m ===")
         
-        # Création de la liste des pulses à tester
-        for amplitude in amplitudes_array:
+        # Création de la liste des pulses à tester pour cette amplitude
+        pulse_square = []
+        for dt in dt_array:
             pulse_square.append([(amplitude, dt)])
         
         # Test de chaque pulse
