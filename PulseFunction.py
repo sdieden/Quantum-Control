@@ -482,6 +482,99 @@ def optimize_pulse_sequence(target_l, dt_array, amplitudes_array, initial_wf, ca
     
     return best_sequence, populations_history[-1], populations_history
 
+def optimize_sequence_grape(initial_state, target_l, calc, n_pulses=5, max_iterations=100, learning_rate=0.01):
+    """
+    Optimise une séquence de pulses en utilisant la méthode GRAPE.
+    
+    Args:
+        initial_state: État initial
+        target_l: Niveau l cible
+        calc: Objet StarkMap initialisé
+        n_pulses: Nombre de pulses dans la séquence
+        max_iterations: Nombre maximum d'itérations
+        learning_rate: Taux d'apprentissage pour la mise à jour du gradient
+    
+    Returns:
+        best_sequence: Liste des meilleurs pulses trouvés [(amplitude1, durée1), ...]
+        best_population: La population maximale atteinte
+        populations_history: Liste des populations à chaque étape
+    """
+    # Initialisation
+    current_state = initial_state
+    pulse_sequence = []
+    populations_history = []
+    
+    # Paramètres de contrôle
+    min_field = -1500  # V/m
+    max_field = 1500   # V/m
+    min_duration = 1e-10  # s
+    max_duration = 1e-6   # s
+    
+    # Initialisation aléatoire de la séquence
+    for _ in range(n_pulses):
+        amplitude = np.random.uniform(min_field, max_field)
+        duration = np.random.uniform(min_duration, max_duration)
+        pulse_sequence.append((amplitude, duration))
+    
+    best_population = 0
+    best_sequence = pulse_sequence.copy()
+    
+    for iteration in range(max_iterations):
+        # Propagation en avant
+        current_state = initial_state
+        for amplitude, duration in pulse_sequence:
+            current_state = pulse_evolution_final([(amplitude, duration)], current_state, calc)
+        
+        # Calcul de la population cible
+        populations = np.abs(current_state) ** 2
+        target_population = 0.0
+        for idx, state in enumerate(calc.basisStates):
+            if state[1] == target_l:
+                target_population += populations[idx]
+        
+        # Mise à jour du meilleur résultat
+        if target_population > best_population:
+            best_population = target_population
+            best_sequence = pulse_sequence.copy()
+        
+        populations_history.append(target_population)
+        
+        # Calcul du gradient pour chaque pulse
+        gradients = []
+        for i in range(n_pulses):
+            # Perturbation de l'amplitude
+            perturbed_sequence = pulse_sequence.copy()
+            perturbed_sequence[i] = (pulse_sequence[i][0] + 0.1, pulse_sequence[i][1])
+            
+            # Propagation avec la séquence perturbée
+            perturbed_state = initial_state
+            for amp, dur in perturbed_sequence:
+                perturbed_state = pulse_evolution_final([(amp, dur)], perturbed_state, calc)
+            
+            # Calcul de la population perturbée
+            perturbed_populations = np.abs(perturbed_state) ** 2
+            perturbed_target_population = 0.0
+            for idx, state in enumerate(calc.basisStates):
+                if state[1] == target_l:
+                    perturbed_target_population += perturbed_populations[idx]
+            
+            # Calcul du gradient
+            gradient = (perturbed_target_population - target_population) / 0.1
+            gradients.append(gradient)
+        
+        # Mise à jour de la séquence
+        for i in range(n_pulses):
+            new_amplitude = pulse_sequence[i][0] + learning_rate * gradients[i]
+            new_amplitude = np.clip(new_amplitude, min_field, max_field)
+            pulse_sequence[i] = (new_amplitude, pulse_sequence[i][1])
+        
+        if (iteration + 1) % 10 == 0:
+            print(f"Itération {iteration + 1}/{max_iterations}")
+            print(f"Population actuelle: {target_population:.6f}")
+            print(f"Meilleure population: {best_population:.6f}")
+    
+    return best_sequence, best_population, populations_history
+
 # Déplacer le code d'exécution dans le bloc if __name__ == "__main__":
 if __name__ == "__main__":
     print("\n=== Test de optimize_pulse_sequence ===")
