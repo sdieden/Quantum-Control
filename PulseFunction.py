@@ -240,6 +240,10 @@ def searching_best_pulse(dt_array, amplitudes_array, initial_wf, calc, lmin = 10
     optimized_pulse_sequence_time = []
     optimized_pulse_sequence_amplitude = []
     
+    # Diagonaliser avec toutes les amplitudes une seule fois
+    print("\nDiagonalisation avec toutes les amplitudes...")
+    calc.diagonalise(sorted(amplitudes_array), upTo=-1, progressOutput=True)
+    
     # Test de toutes les combinaisons possibles
     for amplitude in amplitudes_array:
         print(f"\n=== Calculs avec amplitude = {amplitude} V/m ===")
