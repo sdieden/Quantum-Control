@@ -106,7 +106,7 @@ def apply_pulse(psi_in, pulse, calc): #made by claude
 
     return psi_out
 
-def pulse_evolution(pulseList, initial_coupled, calc):
+def pulse_evolution(pulseList, initial_coupled, calc, precomputed_eigenvectors=None):
     """
     :arg pulseList: list of 2 long lists. The first argument is the Electric field
     and the second argument is the duration of the field
@@ -114,6 +114,7 @@ def pulse_evolution(pulseList, initial_coupled, calc):
     This would be a 30V/m pulse during 5 seconds followed by a null field for 10 seconds and finally a 20V/m pulse during 10 seconds.
     :arg initial_coupled: initial state vector
     :arg calc: StarkMap object that has been properly initialized with defineBasis
+    :arg precomputed_eigenvectors: Dictionnaire des eigenvectors précalculés pour chaque amplitude
 
     """
     # Réinitialiser les pulses à chaque exécution
@@ -135,8 +136,12 @@ def pulse_evolution(pulseList, initial_coupled, calc):
 
     psi = [initial_psi]
 
-    # Diagonaliser avec toutes les amplitudes
-    calc.diagonalise(sorted(tuple(Pulse.amplitudes_list)), upTo=-1, progressOutput=False)
+    # Diagonaliser avec toutes les amplitudes si non précalculées
+    if precomputed_eigenvectors is None:
+        calc.diagonalise(sorted(tuple(Pulse.amplitudes_list)), upTo=-1, progressOutput=False)
+    else:
+        # Utiliser les eigenvectors précalculés
+        calc.composition = precomputed_eigenvectors
 
     # Appliquer chaque pulse dans l'ordre correct
     for i in range(len(Pulse.liste_pulse)):
@@ -146,22 +151,25 @@ def pulse_evolution(pulseList, initial_coupled, calc):
     return psi
 
 
-def pulse_evolution_final(pulseList, initial_coupled, calc):
+def pulse_evolution_final(pulseList, initial_wf, calc, precomputed_eigenvectors=None):
     """
     Version de pulse_evolution qui ne retourne que l'état final après tous les pulses.
     
-    :arg pulseList: list of 2 long lists. The first argument is the Electric field
-    and the second argument is the duration of the field
-    ex : pulseList = [(30,5)(0,10)(20,1)]
-    This would be a 30V/m pulse during 5 seconds followed by a null field for 10 seconds and finally a 20V/m pulse during 10 seconds.
-    :arg initial_coupled: initial state vector
-    :arg calc: StarkMap object that has been properly initialized with defineBasis
-    :return: final state vector after applying all pulses
-
+    Args:
+        pulseList: list of 2 long lists. The first argument is the Electric field
+        and the second argument is the duration of the field
+        ex : pulseList = [(30,5)(0,10)(20,1)]
+        This would be a 30V/m pulse during 5 seconds followed by a null field for 10 seconds and finally a 20V/m pulse during 10 seconds.
+        initial_wf: État initial
+        calc: Objet StarkMap initialisé
+        precomputed_eigenvectors: Dictionnaire des eigenvectors précalculés pour chaque amplitude
+    
+    Returns:
+        final state vector after applying all pulses
     """
     # Réinitialiser les pulses à chaque exécution
-    Pulse.liste_pulse = []  # <-- Ajout crucial
-    Pulse.amplitudes_list = set()  # <-- Réinitialisation des amplitudes
+    Pulse.liste_pulse = []
+    Pulse.amplitudes_list = set()
 
     # Vérification des pulses
     for pulse in pulseList:
@@ -174,10 +182,14 @@ def pulse_evolution_final(pulseList, initial_coupled, calc):
     for amplitude, duration in pulseList:
         Pulse(amplitude, duration)  # Ajoute à Pulse.liste_pulse
 
-    current_psi = initial_coupled
+    current_psi = initial_wf
 
-    # Diagonaliser avec toutes les amplitudes
-    calc.diagonalise(sorted(tuple(Pulse.amplitudes_list)), upTo=-1, progressOutput=True)
+    # Diagonaliser avec toutes les amplitudes si non précalculées
+    if precomputed_eigenvectors is None:
+        calc.diagonalise(sorted(tuple(Pulse.amplitudes_list)), upTo=-1, progressOutput=True)
+    else:
+        # Utiliser les eigenvectors précalculés
+        calc.composition = precomputed_eigenvectors
 
     # Appliquer chaque pulse dans l'ordre correct
     for i in range(len(Pulse.liste_pulse)):
@@ -231,7 +243,8 @@ def searching_best_pulse(dt_array, amplitudes_array, initial_wf, calc, lmin = 10
     for dt in dt_array:
         all_l_populations[dt] = {}
         all_l_coefficients[dt] = {}
-        for l_level in range(lmin, lmax):  # On commence à l=10 comme dans les calculs
+        # Initialiser pour tous les niveaux l possibles dans la base
+        for l_level in range(lmin, lmax + 1):  # +1 pour inclure lmax
             all_l_populations[dt][l_level] = []
         for amplitude in amplitudes_array:
             all_l_coefficients[dt][amplitude] = np.zeros(len(calc.basisStates), dtype=complex)
@@ -243,39 +256,41 @@ def searching_best_pulse(dt_array, amplitudes_array, initial_wf, calc, lmin = 10
     # Diagonaliser avec toutes les amplitudes une seule fois
     print("\nDiagonalisation avec toutes les amplitudes...")
     calc.diagonalise(sorted(amplitudes_array), upTo=-1, progressOutput=True)
+    # Sauvegarder les eigenvectors
+    precomputed_eigenvectors = calc.composition.copy()
     
     # Test de toutes les combinaisons possibles
-    for amplitude in amplitudes_array:
-        print(f"\n=== Calculs avec amplitude = {amplitude} V/m ===")
+    for dt in dt_array:
+        print(f"\n=== Calculs avec durée = {dt} s ===")
         
-        # Création de la liste des pulses à tester pour cette amplitude
+        # Création de la liste des pulses à tester pour cette durée
         pulse_square = []
-        for dt in dt_array:
+        for amplitude in amplitudes_array:
             pulse_square.append([(amplitude, dt)])
         
         # Test de chaque pulse
         for i, pulse_list in enumerate(pulse_square):
             # Application du pulse
-            x = pulse_evolution(pulse_list, initial_coupled=initial_wf, calc=calc)
-            all_l_coefficients[dt][pulse_list[0][0]] = x[-1]
+            x = pulse_evolution(pulse_list, initial_coupled=initial_wf, calc=calc, precomputed_eigenvectors=precomputed_eigenvectors)
+            all_l_coefficients[pulse_list[0][1]][pulse_list[0][0]] = x[-1]
             
             # Calcul des populations
             y = np.abs(x[-1]) ** 2
             
             # Calcul des populations par niveau l
-            for l_level in range(10, lmax):
+            for l_level in range(lmin, lmax + 1):  # +1 pour inclure lmax
                 l_pop = 0.0
                 for idx, state in enumerate(calc.basisStates):
                     if state[1] == l_level:
                         l_pop += y[idx]
-                all_l_populations[dt][l_level].append(l_pop)
+                all_l_populations[pulse_list[0][1]][l_level].append(l_pop)
                 
                 # Mise à jour du meilleur pulse si nécessaire
                 if l_pop > optimized_wavefunction_population:
                     optimized_wavefunction_population = l_pop
                     final_wf = x[-1]
                     idx_amplitudes = pulse_list[0][0]
-                    idx_dt = dt
+                    idx_dt = pulse_list[0][1]
             
             if (i + 1) % 10 == 0:
                 print(f"  Processed {i + 1}/{len(pulse_square)} pulses")
@@ -308,7 +323,7 @@ def optimize_l_population(target_l, dt_array, amplitudes_array, initial_wf, calc
     best_pulse = None
     all_populations = {}
     
-    # Création d'une grille de résultats
+    # Creation d'une grille de resultats
     for dt in dt_array:
         all_populations[dt] = {}
         for amplitude in amplitudes_array:
@@ -317,25 +332,33 @@ def optimize_l_population(target_l, dt_array, amplitudes_array, initial_wf, calc
     print(f"\nOptimisation de la population pour l = {target_l}")
     print("Test des différentes combinaisons...")
     
+    # Diagonaliser avec toutes les amplitudes une seule fois
+    print("\nDiagonalisation avec toutes les amplitudes...")
+    calc.diagonalise(sorted(amplitudes_array), upTo=-1, progressOutput=True)
+    # Sauvegarder les eigenvectors
+    precomputed_eigenvectors = calc.composition.copy()
+    
     # Test de toutes les combinaisons
     for dt in dt_array:
+        print(f"\n=== Calculs avec durée = {dt} s ===")
+        
         for amplitude in amplitudes_array:
             # Application du pulse
             pulse = [(amplitude, dt)]
-            wf_after_pulse = pulse_evolution_final(pulse, initial_wf, calc)
+            wf_after_pulse = pulse_evolution_final(pulse, initial_wf, calc, precomputed_eigenvectors)
             
             # Calcul de la population pour le niveau l cible
             populations = np.abs(wf_after_pulse) ** 2
             l_population = 0.0
             
             for idx, state in enumerate(calc.basisStates):
-                if state[1] == target_l and state[0] == n:  # Vérifie n et l
+                if state[1] == target_l and state[0] == n:  # Verifie n et l
                     l_population += populations[idx]
             
-            # Stockage du résultat
+            # Stockage du resultat
             all_populations[dt][amplitude] = l_population
             
-            # Mise à jour du meilleur pulse si nécessaire
+            # Mise a jour du meilleur pulse si necessaire
             if l_population > best_population:
                 best_population = l_population
                 best_pulse = (amplitude, dt)
@@ -343,11 +366,8 @@ def optimize_l_population(target_l, dt_array, amplitudes_array, initial_wf, calc
                 print(f"    Amplitude : {amplitude} V/m")
                 print(f"    Durée : {dt} s")
                 print(f"    Population : {l_population:.6f}")
-    
-    # Création du graphique
+
     plt.figure(figsize=(12, 8))
-    
-    # Préparation des données pour le graphique
     dt_values = list(dt_array)
     amp_values = list(amplitudes_array)
     pop_matrix = np.zeros((len(dt_values), len(amp_values)))
@@ -355,17 +375,17 @@ def optimize_l_population(target_l, dt_array, amplitudes_array, initial_wf, calc
     for i, dt in enumerate(dt_values):
         for j, amp in enumerate(amp_values):
             pop_matrix[i, j] = all_populations[dt][amp]
-    """
+
     # Graphique en 3D
     ax = plt.axes(projection='3d')
-    X, Y = np.meshgrid(amp_values, dt_values)
+    X, Y = np.meshgrid(amp_values, np.log10(dt_values))  # Utilisation de log10 pour l'axe des durées
     
     # Tracé de la surface
     surf = ax.plot_surface(X, Y, pop_matrix, cmap='viridis')
     
     # Personnalisation du graphique
     ax.set_xlabel('Amplitude (V/m)')
-    ax.set_ylabel('Durée (s)')
+    ax.set_ylabel('log10(Durée) (s)')  # Modification du label pour refléter l'échelle logarithmique
     ax.set_zlabel('Population')
     ax.set_title(f'Population du niveau l={target_l} (n={n})')
     
@@ -375,10 +395,10 @@ def optimize_l_population(target_l, dt_array, amplitudes_array, initial_wf, calc
     # Ajout d'un point pour le meilleur pulse
     best_amp, best_dt = best_pulse
     best_pop = all_populations[best_dt][best_amp]
-    ax.scatter([best_amp], [best_dt], [best_pop], color='red', s=100, label='Meilleur pulse')
+    ax.scatter([best_amp], [np.log10(best_dt)], [best_pop], color='red', s=100, label='Meilleur pulse')
     
     plt.show()
-    """
+
     return best_pulse, best_population, all_populations
 
 def optimize_pulse_sequence(target_l, dt_array, amplitudes_array, initial_wf, calc, n=35, max_iterations=100, target_population=0.9):
@@ -404,25 +424,27 @@ def optimize_pulse_sequence(target_l, dt_array, amplitudes_array, initial_wf, ca
     print(f"Critères d'arrêt : {max_iterations} itérations max ou population > {target_population}")
     
     # Initialisation
-    best_sequence = []
+    best_sequence = []         # array du meilleur sequencage de pulse
     populations_history = [0]  # Population initiale
-    current_wf = initial_wf
-    iteration = 0
+    current_wf = initial_wf    # changement de wf a chaque iteration, la current_wf devient l'output wf de la derniere iteration
+    iteration = 0              # bah... iteration
     
     while iteration < max_iterations:
         print(f"\n=== Pulse {iteration + 1} ===")
         
         # Optimisation du pulse actuel
-        best_pulse, current_pop, _ = optimize_l_population(
-            target_l, dt_array, amplitudes_array, current_wf, calc, n
-        )
+        best_pulse, current_pop, _ = optimize_l_population(target_l, dt_array, amplitudes_array, current_wf, calc, n)
         
-        # Vérification si le pulse améliore la population
-        if current_pop <= populations_history[-1]:
+        # Verification si le pulse ameliore la population
+        """if current_pop <= populations_history[-1]:
             print(f"La population n'augmente plus. Arrêt de l'optimisation.")
             break
-        
-        # Mise à jour des résultats
+        """
+        # Verification si le pulse est meilleur que le premier pulse
+        if current_pop < populations_history[-1]:
+            print(f"La population après {iteration}e pulse est moins performant que le premier pulse")
+            break
+        # Mise a jour des resultats
         best_sequence.append(best_pulse)
         populations_history.append(current_pop)
         
@@ -575,6 +597,90 @@ def optimize_sequence_grape(initial_state, target_l, calc, n_pulses=5, max_itera
     
     return best_sequence, best_population, populations_history
 
+def change_stark_basis(psi_stark_in, old_amplitude, new_amplitude, calc):
+    """
+    Change la base Stark d'un état quantique.
+    
+    Args:
+        psi_stark_in: État dans l'ancienne base Stark
+        old_amplitude: Amplitude de l'ancienne base Stark
+        new_amplitude: Amplitude de la nouvelle base Stark
+        calc: Objet StarkMap initialisé
+    
+    Returns:
+        psi_stark_out: État dans la nouvelle base Stark
+    """
+    # D'abord, on transforme vers la base atomique
+    psi_atomic = np.zeros(len(psi_stark_in), dtype=np.complex128)
+    old_composition = calc.composition[old_amplitude]
+    
+    for atomic_idx in range(len(psi_atomic)):
+        for stark_idx in range(len(old_composition)):
+            stark_comp = old_composition[stark_idx]
+            for comp in stark_comp:
+                if comp[1] == atomic_idx:
+                    psi_atomic[atomic_idx] += comp[0] * psi_stark_in[stark_idx]
+    
+    # Ensuite, on transforme vers la nouvelle base Stark
+    psi_stark_out = np.zeros(len(psi_stark_in), dtype=np.complex128)
+    new_composition = calc.composition[new_amplitude]
+    
+    for stark_idx in range(len(new_composition)):
+        stark_comp = new_composition[stark_idx]
+        for atomic_comp in stark_comp:
+            coef = atomic_comp[0]
+            atomic_idx = atomic_comp[1]
+            psi_stark_out[stark_idx] += coef * psi_atomic[atomic_idx]
+    
+    return psi_stark_out
+
+def apply_pulse_stark(psi_stark_in, pulse, calc):
+    """
+    Applique un pulse à un état quantique en restant dans la base Stark.
+    
+    Args:
+        psi_stark_in: État dans la base Stark avant le pulse
+        pulse: Pulse object avec amplitude (V/m) et duration (s)
+        calc: StarkMap object initialisé
+    
+    Returns:
+        psi_stark_out: État dans la base Stark après le pulse
+    """
+    psi_stark_out = np.zeros(len(psi_stark_in), dtype=np.complex128)
+    
+    if pulse.stark:
+        # Application de l'évolution temporelle dans la base Stark
+        for stark_idx in range(len(psi_stark_in)):
+            energy = calc.y[pulse.index_of_amplitude()][stark_idx]
+            psi_stark_out[stark_idx] = psi_stark_in[stark_idx] * U(energy, pulse.duration)
+    else:
+        # Si pas d'effet Stark, on transforme vers la base atomique, on évolue, puis on revient
+        psi_atomic = np.zeros(len(psi_stark_in), dtype=np.complex128)
+        composition = calc.composition[pulse.index_of_amplitude()]
+        
+        # Transformation vers la base atomique
+        for atomic_idx in range(len(psi_atomic)):
+            for stark_idx in range(len(composition)):
+                stark_comp = composition[stark_idx]
+                for comp in stark_comp:
+                    if comp[1] == atomic_idx:
+                        psi_atomic[atomic_idx] += comp[0] * psi_stark_in[stark_idx]
+        
+        # Évolution dans la base atomique
+        for state_idx in range(len(psi_atomic)):
+            energy = calc.y[0][state_idx]
+            psi_atomic[state_idx] *= U(energy, pulse.duration)
+        
+        # Retour vers la base Stark
+        for stark_idx in range(len(composition)):
+            stark_comp = composition[stark_idx]
+            for atomic_comp in stark_comp:
+                coef = atomic_comp[0]
+                atomic_idx = atomic_comp[1]
+                psi_stark_out[stark_idx] += coef * psi_atomic[atomic_idx]
+    
+    return psi_stark_out
+
 # Déplacer le code d'exécution dans le bloc if __name__ == "__main__":
 if __name__ == "__main__":
     print("\n=== Test de optimize_pulse_sequence ===")
@@ -609,24 +715,24 @@ if __name__ == "__main__":
     print(f"État couplé : {calc.basisStates[calc.indexOfCoupledState]}")
     
     # Paramètres de test
-    N = 100
-    dt_array = np.logspace(-10, -9, N)  # 5 durées entre 1e-7 et 1e-6 secondes
-    amplitudes_array = np.linspace(20, 100, N)  # 5 amplitudes entre 20 et 100 V/m
-    
+    N = 300
+    dt_array = np.logspace(-10, -8, N)
+    amplitudes_array_first_pulse = np.linspace(800, 1500, 151)
+    amplitudes_array = np.linspace(-1500, 1500, 11)
     print("\nParamètres de test :")
     print(f"Durées : {dt_array}")
     print(f"Amplitudes : {amplitudes_array}")
     
     # Optimisation de la séquence pour un niveau l spécifique
-    target_l = 10  # Niveau l à optimiser
+    target_l = 20  # Niveau l à optimiser
     best_sequence, best_pop, pop_history = optimize_pulse_sequence(
         target_l,
         dt_array,
         amplitudes_array,
         initial_wf,
         calc,
-        max_iterations=100,
-        target_population=0.1
+        max_iterations=500,
+        target_population=0.9
     )
     
     print(f"\nRésultats de l'optimisation pour l = {target_l}:")
