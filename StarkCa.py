@@ -30,7 +30,7 @@ calc.defineBasis(n0, l0, j0, mj0, nmin, nmax, lmax, progressOutput=True, s=s0)
 
 Emin = -100.0e2  # Min E field (V/m)
 Emax = 100.0e2  # Max E field (V/m)
-N = 1001  # Number of Points
+N = 501  # Number of Points
 
 # Generate Stark Map
 calc.diagonalise(np.linspace(Emin, Emax, N), progressOutput=True,debugOutput=True)

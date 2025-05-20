@@ -17,7 +17,7 @@ debut = time.time()
 atom = Calcium40()
 calc = StarkMap(atom)
 
-n = 35
+n = 79
 l = 3
 j = 3
 mj = 0
@@ -37,14 +37,14 @@ N = 500
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100  # [V/m]
 step = round((Emax - Emin) / N)
-F_pos = np.linspace(Emin, Emax, num=20)
+F_pos = np.linspace(Emin, Emax, num=200)
 F_neg = np.linspace(-Emax, -Emin, num=10)
 
 a = np.concatenate((F_pos, F_neg))
 a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant
 
 # dt_values = np.logspace(-7.221, -7.15, num = N)# Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
-dt_values = np.linspace(1e-10,30e-10, num = N)
+dt_values = np.linspace(1e-10,1e-9, num = N)
 #dt_values = np.linspace(10e-9, 10e-8, num=N)
 # Dictionnaires pour stocker les résultats pour chaque valeur de dt
 all_l_populations = {}
@@ -52,7 +52,7 @@ all_l_sup_10_populations = {}
 # initialize dictionnaries for every l = 10 - 35
 for dt in dt_values:
     all_l_populations[dt] = {}
-    for l_level in range(0, 35):  # l de 10 à 34 inclus
+    for l_level in range(0, lmax+1):  # l de 10 à 34 inclus
         all_l_populations[dt][l_level] = []
 
 print("Starting detailed l-level population analysis...")
@@ -81,7 +81,7 @@ for dt in dt_values:
         output_pop.append(y)
 
         # Calculer la population pour chaque l de 10 à 34
-        for l_level in range(0, 35):
+        for l_level in range(0, lmax+1):
             # Trouver tous les états avec l = l_level
             l_pop = 0.0
             for idx, state in enumerate(calc.basisStates):
@@ -102,7 +102,7 @@ save_dict = {
     'dt_values': dt_values,
     'amplitudes': a
 }
-for l_level in range(0, 35):
+for l_level in range(0, lmax+1):
     l_key = f'l{l_level}_pop'
     l_data = {}
     for dt in dt_values:
@@ -113,8 +113,8 @@ print(f"Résultats sauvegardés dans{name}")
 
 print("plotting...")
 
-selected_l_levels = [3, 10, 15, 20,25, 34]  # Niveaux l sélectionnés pour visualisation
-
+#selected_l_levels = [3, 10, 15, 20,25, 34]  # Niveaux l sélectionnés pour visualisation
+selected_l_levels = list(range(0, lmax+1))
 # Créer une figure avec plusieurs sous-graphiques (un par niveau l sélectionné)
 fig, axes = plt.subplots(len(selected_l_levels), 2, figsize=(16, 4 * len(selected_l_levels)))
 # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8), sharey=True)

@@ -37,8 +37,8 @@ N = 1500
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100 #[V/m]
 step = round((Emax - Emin) / N)
-F_pos = np.linspace(Emin, Emax, num = 20)
-F_neg = np.linspace(-Emax, -Emin, num = 10)
+F_pos = np.linspace(Emin, Emax, num = 200)
+F_neg = np.linspace(-Emax, -Emin, num = 1)
 
 a = np.concatenate((F_pos, F_neg))
 a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant

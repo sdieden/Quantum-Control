@@ -441,9 +441,10 @@ def optimize_pulse_sequence(target_l, dt_array, amplitudes_array, initial_wf, ca
             break
         """
         # Verification si le pulse est meilleur que le premier pulse
-        if current_pop < populations_history[-1]:
+        """if current_pop < populations_history[-1]:
             print(f"La population après {iteration}e pulse est moins performant que le premier pulse")
             break
+        """
         # Mise a jour des resultats
         best_sequence.append(best_pulse)
         populations_history.append(current_pop)
