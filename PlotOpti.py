@@ -89,7 +89,7 @@ def plot_optimization_results(data_path, data_key, title_prefix="Population", sa
 
 # Exemple d'utilisation
 if __name__ == "__main__":
-    data_path = "Plot/resultats_multi_dt_lin2025-05-19 01:30:40.833791.npz"
+    data_path = "Plot/resultats_multi_dt_lin2025-05-12 14:57:22.524554.npz"
     plot_optimization_results(data_path,'l0_pop',title_prefix='L0 population')
     plot_optimization_results(data_path,'l1_pop',title_prefix='L1 population')
     plot_optimization_results(data_path,'l2_pop',title_prefix='L2 population')
@@ -125,6 +125,7 @@ if __name__ == "__main__":
     plot_optimization_results(data_path,'l32_pop', title_prefix="Population l=32")
     plot_optimization_results(data_path,'l33_pop', title_prefix="Population l=33")
     plot_optimization_results(data_path,'l34_pop', title_prefix="Population l=34")
+    """
     plot_optimization_results(data_path,'l35_pop', title_prefix="Population l=35")
     plot_optimization_results(data_path,'l36_pop', title_prefix="Population l=36")
     plot_optimization_results(data_path,'l37_pop', title_prefix="Population l=37")
@@ -169,4 +170,4 @@ if __name__ == "__main__":
     plot_optimization_results(data_path,'l76_pop', title_prefix="Population l=76")
     plot_optimization_results(data_path,'l77_pop', title_prefix="Population l=77")
     plot_optimization_results(data_path,'l78_pop', title_prefix="Population l=78")
-
+    """
