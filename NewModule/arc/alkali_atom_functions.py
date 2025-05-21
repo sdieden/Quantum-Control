@@ -824,7 +824,7 @@ class AlkaliAtom(object):
         defect = 0.0
 
         if l < 5 and s!= 0: # alkali atoms and non singlet earth-alkali
-            print("If you are working on singlet Calcium and see this, you better be worried")
+            #print("If you are working on singlet Calcium and see this, you better be worried")
             # find correct part in table of quantum defects
             modifiedRRcoef = self.quantumDefect[round(floor(s) + s + j - l)][l]
             if l < 3 and abs(modifiedRRcoef[0]) < 1e-9 and self.Z != 1:
@@ -845,8 +845,8 @@ class AlkaliAtom(object):
             )
 
         elif l < 65 and s == 0:  # singlet alkali
-            if l == 4 :
-                print('here comes the G')
+            #if l == 4 :
+            #    print('here comes the G')
 
             # find correct part in table of quantum defects
             modifiedRRcoef = self.quantumDefect[round(floor(s) + s + j - l)][l]
@@ -858,15 +858,16 @@ class AlkaliAtom(object):
                     + modifiedRRcoef[4] / ((n - modifiedRRcoef[0]) ** 8)
                     + modifiedRRcoef[5] / ((n - modifiedRRcoef[0]) ** 10)
             )
-            print(f'quantum defect for {l}=', defect)
+            #print(f'quantum defect for {l}=', defect)
         else:
             #print('here')
             # use \delta_\ell = \delta_g * (4/\ell)**5
             # from https://journals.aps.org/pra/abstract/10.1103/PhysRevA.74.062712
             defect = self.quantumDefect[0][4][0] * (4 / l) ** 5
-            print(f'quantum defect for {l}=', defect)
+            #print(f'quantum defect for {l}=', defect)
 
-
+        if defect == 0.0:
+            print(n,l,j,s)
         return defect
 
     def getRadialMatrixElement(
