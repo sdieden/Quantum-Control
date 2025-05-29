@@ -23,7 +23,7 @@ mj = 0
 s = 0.0  # Spin of the atom
 nmin = n - 1
 nmax = n + 2
-lmax = nmax - 1
+lmax = 5
 calc.defineBasis(n, l, j, mj, nmin, nmax, lmax, progressOutput=True, s=s)
 initial_wf = np.zeros(len(calc.basisStates), dtype=complex)
 initial_wf[calc.indexOfCoupledState] = 1
@@ -32,18 +32,18 @@ initial_wf[calc.indexOfCoupledState] = 1
 Emin = 0.0#8e2  # 800 V/m
 Emax = 8.0e2#15e2  # 1500 V/m
 
-N = 1000
+N = 300
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100  # [V/m]
 step = round((Emax - Emin) / N)
-F_pos = np.linspace(Emin, Emax, num=500)
+F_pos = np.linspace(Emin, Emax, num=300)
 F_neg = np.linspace(-Emax, -Emin, num=10)
 
 a = np.concatenate((F_pos, F_neg))
 a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant
 
 # dt_values = np.logspace(-7.221, -7.15, num = N)# Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
-dt_values = np.linspace(1e-9,1e-8, num = N)
+dt_values = np.linspace(1e-10,9e-9, num = N)
 #dt_values = np.linspace(10e-9, 10e-8, num=N)
 # Dictionnaires pour stocker les résultats pour chaque valeur de dt
 all_l_populations = {}
