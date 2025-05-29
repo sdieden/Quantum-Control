@@ -13,7 +13,7 @@ hbar = 1
 ghz_to_hartree = 1.51983e-7  # 1 GHz = 1.51983e-7 Hartree
 seconds_to_au = 4.13414e16  # 1 s = 4.13414e16 atomic time units
 
-
+to_atomic = Pulse(0,0)
 def U(en, dt):
     """
     arg : en : is the energy of the level considered.
@@ -35,22 +35,45 @@ def U(en, dt):
     
     return u
 
-def create_basis_change(psi_in,pulse,calc):
+def create_basis_change(amp_prev,amp_next,calc):
     """
-    create matrix for basis change, from stark to atomic, stark to stark
+    Create the matrix of basis change between two stark basis.
+    arg :
+        calc: StarkMap object that has been properly initialized with diagonalise method
+        amp_prev :  previous pulse, must come from a Pulse object
+        amp_next :  next pulse, must come from a Pulse object
+    """
+    length_basis = len(calc.basisStates)
+    # initialize matrix with None values
+    matrix = np.full((length_basis,length_basis), np.nan)
+    # we need the basis of the previous and the new stark basis
+    prev_basis = calc.composition[amp_prev.index_of_amplitude()]
+    next_basis = calc.composition[amp_next.index_of_amplitude()]
 
-    """
-    stark_basis = calc.composition[pulse.index_of_amplitude]
-    # for atomic to stark first
-    length = len(psi_in)
-    matrix = [[0 for _ in range(length)] for _ in range(length)]
-    for i,state in stark_basis:
-        idx = state[1]
-        coef = state[0]
-        matrix[idx][i] = coef
+    # Those are not sorted, we want them sorted to simplify loops
+    for list in range(length_basis):
+        prev_basis[list].sort(key=lambda x:x[1])
+        next_basis[list].sort(key=lambda x:x[1])
+
+    prev_basis_sorted = [[sub_arr[0] for sub_arr in list] for list in prev_basis]
+    next_basis_sorted = [[sub_arr[0] for sub_arr in list] for list in next_basis]
+   # coefficients are given by _[0]
+   # we need to do the sum of the dot product
+   # compute matrix elements
+    for i in range(length_basis): #column
+        coef_prev = prev_basis_sorted[i] #array des coeff des états propres de la base stark initial
+        for j in range(length_basis): #row
+            coef_next = next_basis_sorted[j] #array des coeff des états propre de la base stark final
+            coef_next = np.conj(coef_next)
+
+            # dot product
+            matrix_element = np.dot(coef_prev, coef_next)
+
+            matrix[i][j] = matrix_element
+
+    if any(element is np.nan for row in matrix for element in row):
+        raise ValueError("La matrice contient des valeurs None")
     return matrix
-
-
 
 def apply_pulse(psi_in, pulse, calc): #made by claude
     """
@@ -150,7 +173,49 @@ def pulse_evolution(pulseList, initial_coupled, calc, precomputed_eigenvectors=N
 
     return psi
 
+def pulse_evolution_test(pulseList, initial_coupled, calc, precomputed_eigenvectors=None):
+    """
+    :arg pulseList: list of 2 long lists. The first argument is the Electric field
+    and the second argument is the duration of the field
+    ex : pulseList = [(30,5)(0,10)(20,1)]
+    This would be a 30V/m pulse during 5 seconds followed by a null field for 10 seconds and finally a 20V/m pulse during 10 seconds.
+    :arg initial_coupled: initial state vector
+    :arg calc: StarkMap object that has been properly initialized with defineBasis
+    :arg precomputed_eigenvectors: Dictionnaire des eigenvectors précalculés pour chaque amplitude
 
+    """
+    # Réinitialiser les pulses à chaque exécution
+    Pulse.liste_pulse = []
+    Pulse.amplitudes_list = set()
+
+    # Vérification des pulses
+    for pulse in pulseList:
+        if len(pulse) != 2:
+            raise ValueError(f'pulse {pulse} doit avoir 2 éléments (amplitude, durée)')
+        if pulse[1] <= 0:
+            raise ValueError(f'duration is negative', {pulse[1]}, 'must be positive')
+
+    # Creation des objets Pulse
+    for amplitude, duration in pulseList:
+        Pulse(amplitude, duration)  # Ajoute à Pulse.liste_pulse
+
+    initial_psi = initial_coupled
+
+    psi = [initial_psi]
+
+    # Diagonaliser avec toutes les amplitudes si non précalculées
+    if precomputed_eigenvectors is None:
+        calc.diagonalise(sorted(tuple(Pulse.amplitudes_list)), upTo=-1, progressOutput=False)
+    else:
+        # Utiliser les eigenvectors précalculés
+        calc.composition = precomputed_eigenvectors
+
+    # Appliquer chaque pulse dans l'ordre correct
+    for i in range(len(Pulse.liste_pulse)):
+        current_pulse = Pulse.liste_pulse[i]
+        psi.append(apply_pulse_test(psi[-1], current_pulse, calc=calc))
+
+    return psi
 def pulse_evolution_final(pulseList, initial_wf, calc, precomputed_eigenvectors=None):
     """
     Version de pulse_evolution qui ne retourne que l'état final après tous les pulses.
@@ -604,8 +669,8 @@ def change_stark_basis(psi_stark_in, old_amplitude, new_amplitude, calc):
     
     Args:
         psi_stark_in: État dans l'ancienne base Stark
-        old_amplitude: Amplitude de l'ancienne base Stark
-        new_amplitude: Amplitude de la nouvelle base Stark
+        old_amplitude: Amplitude de l'ancienne base Stark, Pulse object
+        new_amplitude: Amplitude de la nouvelle base Stark, Pulse object
         calc: Objet StarkMap initialisé
     
     Returns:
@@ -646,6 +711,9 @@ def apply_pulse_stark(psi_stark_in, pulse, calc):
     
     Returns:
         psi_stark_out: État dans la base Stark après le pulse
+
+
+        TODO : apparement ici il n'y a pas de changement de base vers Stark donc ca ne peut pas fonctionner seul
     """
     psi_stark_out = np.zeros(len(psi_stark_in), dtype=np.complex128)
     
@@ -655,7 +723,7 @@ def apply_pulse_stark(psi_stark_in, pulse, calc):
             energy = calc.y[pulse.index_of_amplitude()][stark_idx]
             psi_stark_out[stark_idx] = psi_stark_in[stark_idx] * U(energy, pulse.duration)
     else:
-        # Si pas d'effet Stark, on transforme vers la base atomique, on évolue, puis on revient
+        # Si pas d'effet Stark, on transforme vers la base atomique, on évolue et on reste dans la base Stark
         psi_atomic = np.zeros(len(psi_stark_in), dtype=np.complex128)
         composition = calc.composition[pulse.index_of_amplitude()]
         
@@ -671,7 +739,7 @@ def apply_pulse_stark(psi_stark_in, pulse, calc):
         for state_idx in range(len(psi_atomic)):
             energy = calc.y[0][state_idx]
             psi_atomic[state_idx] *= U(energy, pulse.duration)
-        
+        """
         # Retour vers la base Stark
         for stark_idx in range(len(composition)):
             stark_comp = composition[stark_idx]
@@ -679,9 +747,18 @@ def apply_pulse_stark(psi_stark_in, pulse, calc):
                 coef = atomic_comp[0]
                 atomic_idx = atomic_comp[1]
                 psi_stark_out[stark_idx] += coef * psi_atomic[atomic_idx]
+        """
     
     return psi_stark_out
-
+# creation of a function to test out. It will use the matrix base changes to see if it change a lot or not the results
+def apply_pulse_test(psi_stark_in, pulse, calc, prev_pulse=to_atomic):
+    psi_out = np.zeros(len(psi_stark_in), dtype=np.complex128)
+    cob = create_basis_change(prev_pulse, pulse, calc)
+    psi = np.dot(cob, psi_stark_in)
+    for stark_idx in range(len(psi_stark_in)):
+        energy = calc.y[pulse.index_of_amplitude()][stark_idx]
+        psi_out[stark_idx] = psi[stark_idx] * U(energy, pulse.duration)
+    return psi_out
 # Déplacer le code d'exécution dans le bloc if __name__ == "__main__":
 if __name__ == "__main__":
     print("\n=== Test de optimize_pulse_sequence ===")
