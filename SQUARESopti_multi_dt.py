@@ -33,7 +33,7 @@ initial_wf[calc.indexOfCoupledState]= 1
 Emin = 8e2    # 800 V/m
 Emax = 15e2   # 1500 V/m
 
-N = 1500
+N = 200
 min_t_interval = 2e-10
 min_v_interval = 0.0029296875 * 100 #[V/m]
 step = round((Emax - Emin) / N)
@@ -45,7 +45,7 @@ a = np.sort(a)  # Trier les valeurs pour assurer l'ordre croissant
 
 # Liste des différentes durées de pulse à tester
 #dt_values = np.logspace(-7.221, -7.15, num = N)# Distribution logarithmique entre 10^-9 et 10^-6, avec plus de points
-dt_values = np.logspace(-10,-6, num = N)
+dt_values = np.linspace(1e-10,9e-9, num = N)
 # Dictionnaires pour stocker les résultats pour chaque valeur de dt
 all_l10_populations = {}
 all_l_sup_10_populations = {}

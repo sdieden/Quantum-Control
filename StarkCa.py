@@ -12,25 +12,25 @@ calc = StarkMap(Calcium40())
 #x%matplotlib qt
 
 # Target state
-n0 = 35
-l0 = 3
-j0 = 3
+n0 = 36
+l0 = 2
+j0 = 2
 mj0 = 0
 s0 = 0
  # Define max/min n values in basis
-nmin = n0 - 3
-nmax = n0 + 3
+nmin = n0 - 1
+nmax = n0 + 2
 
 
 # Maximum value of l to include (l~20 gives good convergence for states with l<5)
-lmax = nmax-1 #nmax-1
+lmax = 34 #nmax-1
 
 # Initialise Basis States for Solver : progressOutput=True gives verbose output
 calc.defineBasis(n0, l0, j0, mj0, nmin, nmax, lmax, progressOutput=True, s=s0)
 
-Emin = -100.0e2  # Min E field (V/m)
-Emax = 100.0e2  # Max E field (V/m)
-N = 501  # Number of Points
+Emin = 0  # Min E field (V/m)
+Emax = 80.0e2  # Max E field (V/m)
+N = 1001  # Number of Points
 
 # Generate Stark Map
 calc.diagonalise(np.linspace(Emin, Emax, N), progressOutput=True,debugOutput=True)

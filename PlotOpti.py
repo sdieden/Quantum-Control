@@ -60,7 +60,7 @@ def plot_optimization_results(data_path, data_key, title_prefix="Population", sa
     for ax, title in [(ax1, 'Champs électriques négatifs'), (ax2, 'Champs électriques positifs')]:
         ax.set_xlabel('Amplitude du champ électrique (V/m)')
         ax.set_title(f'{title_prefix} - {title}')
-        #ax.set_yscale('log')
+        ax.set_yscale('log')
 
     ax1.set_ylabel('Durée du pulse (s)')
 
@@ -89,7 +89,7 @@ def plot_optimization_results(data_path, data_key, title_prefix="Population", sa
 
 # Exemple d'utilisation
 if __name__ == "__main__":
-    data_path = "Plot/resultats_multi_dt_lin2025-05-12 14:57:22.524554.npz"
+    data_path = "Plot/resultats_multi_dt_lin2025-06-07 03:43:22.564050.npz"
     plot_optimization_results(data_path,'l0_pop',title_prefix='L0 population')
     plot_optimization_results(data_path,'l1_pop',title_prefix='L1 population')
     plot_optimization_results(data_path,'l2_pop',title_prefix='L2 population')
